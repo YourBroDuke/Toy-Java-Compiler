@@ -1,4 +1,3 @@
-%option noyywrap
 %{
 #include <stdio.h>
 %}
@@ -7,26 +6,27 @@ Letter [A-Za-z$_]
 HexDigit [0-9a-fA-F]
 LetterOrDigit [A-Za-z0-9]
 Digits [0-9]([0-9_]*[0-9])?
-HexDigits HexDigit((HexDigit | '_')*HexDigit)?
-ExponentPart [eE][+-]?Digits
-EscapeSequence "\\"[bfnrt"\]
+HexDigits {HexDigit}(({HexDigit}|_)*{HexDigit})?
+ExponentPart [eE][+-]?{Digits}
+EscapeSequence \\[bfnrt"\\]
 WhiteSpace [ \t\r\n]+
-MultiLineComment "/*" ( [^\*] | (\*)* [^\*/] )* (\*)* "*/"
+MultiLineComment /\*([^\*]|(\*)*[^\*/])*(\*)*\*/
 LineComment //[^\r\n]*
 
-DecimalLiteral ('0' | [1-9](Digits? | '_'+Digits))[lL]?
-HexLiteral '0'[xX]HexDigit([0-9a-f])
-OctLiteral '0''_'*[0-7]([0-7_]*[0-7])?[lL]?
-BinaryLiteral '0'[bB][01]([01_]*[01])?[lL]?
-FloatLiteral (Digits'.'Digits? | '.'Digits) ExponentPart?[fFdD]? | Digits(ExponentPart [fFdD]? | [fFdD])
-HexFloatLiteral '0'[xX](HexDigits'.'? | HexDigits?'.'HexDigits)[pP][+-]?Digits[fFdD]?
-CharLiteral '\''([^\\\r\n] | EscapeSequence) '\''
-StringLiteral '"'([^\\\r\n] | EscapeSequence)* '\''
-Identifier Letter LetterOrDigit*
+decimalliteral (0|[1-9]({Digits}?|_+{Digits}))[lL]?
+HexLiteral 0[xX]{HexDigit}([0-9a-f])
+OctLiteral 0_*[0-7]([0-7_]*[0-7])?[lL]?
+BinaryLiteral 0[bB][01]([01_]*[01])?[lL]?
+FloatLiteral ({Digits}\.{Digits}?|\.{Digits}){ExponentPart}?[fFdD]?|{Digits}({ExponentPart}[fFdD]?|[fFdD])
+HexFloatLiteral 0[xX]({HexDigits}\.?|{HexDigits}?\.{HexDigits})[pP][+-]?{Digits}[fFdD]?
+CharLiteral '([^\\\r\n]|{EscapeSequence})'
+StringLiteral "([^\\\r\n]|{EscapeSequence})*"
+Identifier {Letter}{LetterOrDigit}*
 %%
 
 "abstract"      { yylval.token = ABSTRACT; return ABSTRACT; }
 "assert"        { yylval.token = ASSERT; return ASSERT; }
+"auto"          { yylval.token = AUTO; return AUTO; }
 "boolean"       { yylval.token = BOOLEAN; return BOOLEAN; }
 "break"         { yylval.token = BREAK; return BREAK; }
 "byte"          { yylval.token = BYTE; return BYTE; }
@@ -103,6 +103,7 @@ Identifier Letter LetterOrDigit*
 "*"             { yylval.token = MUL; return MUL; }
 "/"             { yylval.token = DIV; return DIV; }
 "%"             { yylval.token = MOD; return MOD; }
+"??"            { yylval.token = DEFAULT; return DEFAULT; }
 "=="            { yylval.token = EQUAL; return EQUAL; }
 "!="            { yylval.token = NEQUAL; return NEQUAL; }
 "<="            { yylval.token = LTOE; return LTOE; }
@@ -127,16 +128,10 @@ Identifier Letter LetterOrDigit*
 ">>>="          { yylval.token = URSHIFT_ASSIGN; return URSHIFT_ASSIGN; }
 
 "null"          { yylval.token = NULL_LITERAL; return NULL_LITERAL; }
-"true"          {
-    yylval.string = new std::string(yytext, yyleng);
-    return BOOL_LITERAL;
-}
-"false"         {
-    yylval.string = new std::string(yytext, yyleng);
-    return BOOL_LITERAL;
-}
+"true"          { yylval.string = new std::string(yytext, yyleng); return BOOL_LITERAL;}
+"false"         { yylval.string = new std::string(yytext, yyleng); return BOOL_LITERAL; }
 
-{DecimalLiteral} {
+{decimalliteral} {
     yylval.string = new std::string(yytext, yyleng);
     return DECIMAL_LITERAL;
 }
@@ -183,5 +178,10 @@ Identifier Letter LetterOrDigit*
 
 %%
 
-// other C statements
+// other C st atements
 // yyin yyout yytext yyleng yylineno yylex() yywrap() yyless() yymore()
+
+void main()
+{
+    yylex();
+}

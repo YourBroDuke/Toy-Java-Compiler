@@ -1,2 +1,3 @@
 # configure files about VSCode
 .vscode/
+src/lex.yy.c
