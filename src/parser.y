@@ -1,9 +1,12 @@
 %{
-	#include "node.h"
-    #include <cstdio>
-    #include <cstdlib>
-	extern int yylex();
-	void yyerror(const char *s) { std::printf("Error: %s\n", s);std::exit(1); }
+#include "node.h"
+#include <cstdio>
+#include <cstdlib>
+extern int yylex();
+void yyerror(const char *s) {
+	printf("Error: %s\n", s);
+	exit(1); 
+}
 %}
 
 /* Represents the many different ways we can access our data */
@@ -46,11 +49,16 @@
 
 %%
 
-program : stmts { programBlock = $1; }
-		;
+calculation:
+	| calculation line
+calculation:
+	HEX_LITERAL PLUS HEX_LITERAL { $$ =  atof($1->string) + atof($2->string); }
 		
-stmts : stmt { $$ = new NBlock(); $$->statements.push_back($<stmt>1); }
+stmts:
+	stmt { $$ = new NBlock(); $$->statements.push_back($<stmt>1); }
 	    | stmts stmt { $1->statements.push_back($<stmt>2); }
 	    ;
 
 %%
+
+// Hello
