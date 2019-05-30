@@ -27,6 +27,7 @@ Identifier Letter LetterOrDigit*
 
 "abstract"      { yylval.token = ABSTRACT; return ABSTRACT; }
 "assert"        { yylval.token = ASSERT; return ASSERT; }
+"auto"          { yylval.token = AUTO; return AUTO; }
 "boolean"       { yylval.token = BOOLEAN; return BOOLEAN; }
 "break"         { yylval.token = BREAK; return BREAK; }
 "byte"          { yylval.token = BYTE; return BYTE; }
@@ -104,6 +105,7 @@ Identifier Letter LetterOrDigit*
 "/"             { yylval.token = DIV; return DIV; }
 "%"             { yylval.token = MOD; return MOD; }
 "=="            { yylval.token = EQUAL; return EQUAL; }
+"??"            { yylval.token = DEFAULT; return DEFAULT; }
 "!="            { yylval.token = NEQUAL; return NEQUAL; }
 "<="            { yylval.token = LTOE; return LTOE; }
 ">="            { yylval.token = GTOE; return GTOE; }
@@ -127,14 +129,8 @@ Identifier Letter LetterOrDigit*
 ">>>="          { yylval.token = URSHIFT_ASSIGN; return URSHIFT_ASSIGN; }
 
 "null"          { yylval.token = NULL_LITERAL; return NULL_LITERAL; }
-"true"          {
-    yylval.string = new std::string(yytext, yyleng);
-    return BOOL_LITERAL;
-}
-"false"         {
-    yylval.string = new std::string(yytext, yyleng);
-    return BOOL_LITERAL;
-}
+"true"          { yylval.token = TRUE_LITERAL; return TRUE_LITERAL; }
+"false"         { yylval.token = FALSE_LITERAL; return FALSE_LITERAL; }
 
 {DecimalLiteral} {
     yylval.string = new std::string(yytext, yyleng);
