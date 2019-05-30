@@ -105,7 +105,6 @@ Identifier {Letter}{LetterOrDigit}*
 "%"             { yylval.token = MOD; return MOD; }
 "??"            { yylval.token = DEFAULT; return DEFAULT; }
 "=="            { yylval.token = EQUAL; return EQUAL; }
-"??"            { yylval.token = DEFAULT; return DEFAULT; }
 "!="            { yylval.token = NEQUAL; return NEQUAL; }
 "<="            { yylval.token = LTOE; return LTOE; }
 ">="            { yylval.token = GTOE; return GTOE; }
