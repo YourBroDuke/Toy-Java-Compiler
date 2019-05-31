@@ -23,7 +23,6 @@ CharLiteral '([^\\\r\n]|{EscapeSequence})'
 StringLiteral "([^\\\r\n]|{EscapeSequence})*"
 Identifier {Letter}{LetterOrDigit}*
 %%
-
 "abstract"      { yylval.token = ABSTRACT; return ABSTRACT; }
 "assert"        { yylval.token = ASSERT; return ASSERT; }
 "auto"          { yylval.token = AUTO; return AUTO; }

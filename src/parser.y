@@ -22,7 +22,8 @@ void yyerror(const char *s) {
    match our tokens.l lex file. We also define the node type
    they represent.
  */
-%token <string> IDENTIFIER 
+%token <string> IDENTIFIER DECIMAL_LITERAL HEX_LITERAL OCT_LITERAL BINARY_LITERAL
+%token <string> FLOAT_LITERAL HEXFLOAT_LITERAL CHAR_LITERAL STRING_LITERAL
 %token <token> PACKAGE SEMIC DOT
 
 /* Define the type of node our nonterminal symbols represent.
