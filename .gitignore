@@ -1,3 +1,7 @@
 # configure files about VSCode
 .vscode/
 src/lex.yy.c
+*.o
+lavac
+y.tab.*
+lex.yy.*

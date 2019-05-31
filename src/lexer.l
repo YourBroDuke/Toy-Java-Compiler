@@ -1,5 +1,8 @@
+%option noyywrap
 %{
 #include <stdio.h>
+#include <string>
+#include "y.tab.h"
 %}
 
 Letter [A-Za-z$_]
@@ -179,8 +182,3 @@ Identifier {Letter}{LetterOrDigit}*
 
 // other C st atements
 // yyin yyout yytext yyleng yylineno yylex() yywrap() yyless() yymore()
-
-void main()
-{
-    yylex();
-}
