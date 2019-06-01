@@ -5,7 +5,7 @@ $(target):y.tab.o lex.yy.o
 	$(CC) -o $(target)  y.tab.o lex.yy.o 
 
 y.tab.c:parser.y
-	yacc -d parser.y
+	yacc -d -Wconflicts-sr parser.y
 
 lex.yy.c:lexer.l
 	lex lexer.l

@@ -64,32 +64,225 @@ CompilationUnit:
 	;
 
 PackageDeclaration: 
-	PackageAnnotation PACKAGE QualifiedName SEMIC {debugInfo("match package decl");}
-	;
-
-PackageAnnotation: 
-	| Annotation
+	PACKAGE QualifiedName SEMIC
+	| Annotation PACKAGE QualifiedName SEMIC {debugInfo("match package decl");}
 	;
 
 QualifiedName: 
-	IDENTIFIER DotIDs {debugInfo("match qualified name");}
+	IDENTIFIER 
+	| QualifiedName DOT IDENTIFIER {debugInfo("match qualified name");}
 	;
 
-DotIDs: 
-	| DotID DotIDs {debugInfo("match DotIDs");}
-	;
-
-DotID:
-	DOT IDENTIFIER {debugInfo($2);}
+AnnotationList:
+	Annotation
+	| AnnotationList Annotation
 	;
 
 Annotation:
-	_AT {debugInfo("match annotation");};
-
-ImportDeclaration:
+	_AT QualifiedName
+	| _AT QualifiedName LPAREN AnnotationValue RPAREN
 	;
 
+AnnotationValue:
+	ElementValuePairs
+	| ElementValue
+	;
+
+ElementValuePairs:
+	ElementValuePair
+	| ElementValuePairs ElementValuePair
+	;
+
+ElementValuePair:
+	IDENTIFIER EQUAL ElementValue
+	;
+
+ElementValue:
+	Expression
+	| Annotation
+	| ElementValueInitializer
+	;
+
+Expression:
+	IDENTIFIER;
+
+ElementValueInitializer:
+	LBRACE ElementValues RBRACE
+	| LBRACE ElementValues COMMA RBRACE
+	;
+
+ElementValues:
+	ElementValue
+	| ElementValues COMMA ElementValue
+	;
+
+ImportDeclaration:
+	SingleImportDecl
+	| TypeImportDecl
+	;
+
+SingleImportDecl:
+	IMPORT QualifiedName SEMIC
+	| IMPORT STATIC QualifiedName SEMIC
+	;
+
+TypeImportDecl:
+	IMPORT QualifiedName DOT MUL SEMIC
+	| IMPORT STATIC QualifiedName DOT MUL SEMIC
+	;
+	
 TypeDeclaration:
+	ClassOrInterfaceModifierListOptional ClassDecl
+	| ClassOrInterfaceModifierListOptional EnumDecl
+	| ClassOrInterfaceModifierListOptional InterfaceDecl
+	| ClassOrInterfaceModifierListOptional AnnotationTypeDecl
+	| SEMIC
+	;
+
+ClassOrInterfaceModifierListOptional:
+	ClassOrInterfaceModifierList
+	|
+	;
+
+ClassOrInterfaceModifierList:
+	ClassOrInterfaceModifier
+	| ClassOrInterfaceModifierList ClassOrInterfaceModifier
+	;
+
+ClassOrInterfaceModifier:
+	Annotation
+	| PUBLIC
+	| PRIVATE
+	| PROTECTED
+	| STATIC
+	| ABSTRACT
+	| FINAL
+	| STRICTFP
+	;
+
+Modifier:
+	ClassOrInterfaceModifier
+	| NATIVE
+	| SYNCHRONIZED
+	| TRANSIENT
+	| VOLATILE
+	;
+
+VariableModifier:
+	FINAL
+	| Annotation
+	;
+
+ClassDecl:
+	CLASS IDENTIFIER ClassBody
+	| CLASS IDENTIFIER TypeParams ClassBody
+	| CLASS IDENTIFIER EXTENDS TypeType ClassBody
+	| CLASS IDENTIFIER IMPLEMENTS TypeTypes ClassBody
+	| CLASS IDENTIFIER TypeParams EXTENDS TypeType ClassBody
+	| CLASS IDENTIFIER TypeParams IMPLEMENTS TypeTypes ClassBody
+	| CLASS IDENTIFIER TypeParams EXTENDS TypeType IMPLEMENTS TypeTypes ClassBody
+	| CLASS IDENTIFIER EXTENDS TypeType IMPLEMENTS TypeTypes ClassBody
+	;
+
+TypeParams:
+	LT DotTypeParams GT
+	;
+
+DotTypeParams:
+	TypeParam
+	| DotTypeParams DOT TypeParam
+	;
+
+TypeParam:
+	IDENTIFIER
+	| IDENTIFIER EXTENDS TypeBound
+	| AnnotationList IDENTIFIER
+	| AnnotationList IDENTIFIER EXTENDS TypeBound
+	;
+
+TypeBound:
+	TypeType
+	| TypeBound AND TypeType
+	;
+
+PrimitiveType:
+	BOOLEAN
+	| CHAR
+	| BYTE
+	| SHORT
+	| INT 
+	| LONG
+	| FLOAT
+	| DOUBLE
+	;
+
+ClassOrInterfaceType:
+	IDENTIFIER DotClassOrInterfaceTypeList
+	| IDENTIFIER TypeArguments DotClassOrInterfaceTypeList
+	;
+
+DotIDTypeArguments:
+	DOT IDENTIFIER
+	| DOT IDENTIFIER TypeArguments
+	;
+
+DotClassOrInterfaceTypeList:
+	DotClassOrInterfaceTypeList DotIDTypeArguments
+	|
+	;
+
+TypeArguments:
+	LT DotTypeArguments GT
+	;
+
+DotTypeArguments:
+	TypeArgument
+	| DotTypeArguments DOT TypeArgument
+	;
+
+TypeArgument:
+	TypeType
+	| QUESTION
+	| QUESTION EXTENDS TypeType
+	| QUESTION SUPER TypeType
+	;
+
+TypeType:
+	Annotation ClassOrInterfaceType LRBrackListOptional
+	| ClassOrInterfaceType LRBrackListOptional
+	| Annotation PrimitiveType LRBrackListOptional
+	| PrimitiveType LRBrackListOptional
+	;
+
+LRBrackListOptional:
+	LRBrackList
+	|
+	;
+
+LRBrackList:
+	LBRACK RBRACK
+	| LRBrackList LBRACK RBRACK
+	;
+
+TypeTypes:
+	TypeType
+	| TypeTypes TypeType
+	;
+
+AnnotationTypeDecl:
+	_AT INTERFACE IDENTIFIER LPAREN BOOLEAN IDENTIFIER LPAREN RPAREN
+	;
+
+InterfaceDecl:
+	INTERFACE IDENTIFIER LBRACE RBRACE
+	;
+
+EnumDecl:
+	ENUM IDENTIFIER LBRACE RBRACE
+	;
+
+ClassBody:
+	LBRACE RBRACE
 	;
 %%
 
