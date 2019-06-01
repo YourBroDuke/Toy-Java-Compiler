@@ -4,8 +4,10 @@
 #include <string>
 #include <iostream>
 extern int yylex();
+extern char *yytext;
 void yyerror(const char *s) {
 	printf("Error: %s\n", s);
+	printf("Error text: %s\n", yytext);
 	exit(1); 
 }
 using namespace std;
@@ -57,6 +59,8 @@ void debugInfo(string *s){
 
 /* Operator precedence for mathematical operators */
 
+%start PackageDeclaration
+
 %%
 
 CompilationUnit:
@@ -64,13 +68,13 @@ CompilationUnit:
 	;
 
 PackageDeclaration: 
-	PACKAGE QualifiedName SEMIC
-	| Annotation PACKAGE QualifiedName SEMIC {debugInfo("match package decl");}
+	PACKAGE QualifiedName SEMIC { debugInfo("package"); debugInfo(";"); }
+	| Annotation PACKAGE QualifiedName SEMIC { debugInfo("package"); debugInfo(";"); }
 	;
 
 QualifiedName: 
-	IDENTIFIER 
-	| QualifiedName DOT IDENTIFIER {debugInfo("match qualified name");}
+	IDENTIFIER { debugInfo($1); }
+	| QualifiedName DOT IDENTIFIER { debugInfo("."); debugInfo($3); }
 	;
 
 AnnotationList:
