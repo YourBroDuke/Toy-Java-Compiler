@@ -105,7 +105,9 @@ Identifier {Letter}{LetterOrDigit}*
 "*"             { yylval.token = MUL; return MUL; }
 "/"             { yylval.token = DIV; return DIV; }
 "%"             { yylval.token = MOD; return MOD; }
-"??"            { yylval.token = DEFAULT; return DEFAULT; }
+"::"            { yylval.token = DCOLON; return DCOLON; }
+"??"            { yylval.token = DEFAULT_VAL; return DEFAULT_VAL; }
+"->"            { yylval.token = ARROW; return ARROW; }
 "=="            { yylval.token = EQUAL; return EQUAL; }
 "!="            { yylval.token = NEQUAL; return NEQUAL; }
 "<="            { yylval.token = LTOE; return LTOE; }
@@ -177,6 +179,8 @@ Identifier {Letter}{LetterOrDigit}*
     yylval.string = new std::string(yytext, yyleng);
     return IDENTIFIER;
 }
+
+{WhiteSpace} ;
 
 %%
 

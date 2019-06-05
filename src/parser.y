@@ -8,7 +8,7 @@ extern char *yytext;
 void yyerror(const char *s) {
 	printf("Error: %s\n", s);
 	printf("Error text: %s\n", yytext);
-	exit(1); 
+	exit(1);
 }
 using namespace std;
 #define DEBUG
@@ -43,9 +43,9 @@ void debugInfo(string *s){
 %token <token> PACKAGE PRIVATE PROTECTED PUBLIC RETURN SHORT STATIC STRICTFP
 %token <token> SUPER SWITCH SYNCHRONIZED THIS THROW THROWS TRANSIENT
 %token <token> TRY VOID VOLATILE WHILE _AT _ELLIPSIS ASSIGN TILDE
-%token <token> QUESTION COLON LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK
+%token <token> QUESTION DCOLON COLON LPAREN RPAREN LBRACE RBRACE LBRACK RBRACK
 %token <token> DOT COMMA SEMIC BANG LT GT BITAND BITOR CARET ADD SUB MUL DIV
-%token <token> MOD EQUAL NEQUAL LTOE GTOE AND OR LSHIFT RSHIFT INCRE
+%token <token> MOD EQUAL NEQUAL LTOE GTOE AND OR LSHIFT RSHIFT INCRE DEFAULT_VAL ARROW
 %token <token> DECRE ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN AND_ASSIGN
 %token <token> OR_ASSIGN XOR_ASSIGN MOD_ASSIGN LSHIFT_ASSIGN RSHIFT_ASSIGN
 %token <token> URSHIFT URSHIFT_ASSIGN NULL_LITERAL TRUE_LITERAL FALSE_LITERAL
@@ -59,22 +59,52 @@ void debugInfo(string *s){
 
 /* Operator precedence for mathematical operators */
 
-%start PackageDeclaration
+%start CompilationUnit
 
 %%
 
 CompilationUnit:
-	PackageDeclaration ImportDeclaration TypeDeclaration
+	PackageDecl ImportDeclListOptional TypeDeclListOptional
+	| ImportDeclListOptional TypeDeclListOptional
 	;
 
-PackageDeclaration: 
+PackageDecl:
 	PACKAGE QualifiedName SEMIC { debugInfo("package"); debugInfo(";"); }
-	| Annotation PACKAGE QualifiedName SEMIC { debugInfo("package"); debugInfo(";"); }
+	| AnnotationList PACKAGE QualifiedName SEMIC { debugInfo("package"); debugInfo(";"); }
 	;
 
-QualifiedName: 
-	IDENTIFIER { debugInfo($1); }
-	| QualifiedName DOT IDENTIFIER { debugInfo("."); debugInfo($3); }
+ /* ImportDecl TypeDecl */
+
+QualifiedName:
+	IDENTIFIER { debugInfo($1); debugInfo("haha"); }
+	| QualifiedName DOT IDENTIFIER { debugInfo("."); debugInfo($3); debugInfo("haha"); }
+	;
+
+Literal:
+	IntegerLiteral
+	| FloatLiteral
+	| CHAR_LITERAL
+	| STRING_LITERAL
+	| TRUE_LITERAL
+	| FALSE_LITERAL
+	| NULL_LITERAL
+	;
+
+IntegerLiteral:
+	DECIMAL_LITERAL
+	| HEX_LITERAL
+	| OCT_LITERAL
+	| BINARY_LITERAL
+	;
+
+FloatLiteral:
+	FLOAT_LITERAL
+	| HEXFLOAT_LITERAL
+	;
+
+AnnotationListOptional:
+	AnnotationList
+	|
 	;
 
 AnnotationList:
@@ -83,36 +113,254 @@ AnnotationList:
 	;
 
 Annotation:
-	_AT QualifiedName
+	_AT QualifiedName { debugInfo("@"); }
 	| _AT QualifiedName LPAREN AnnotationValue RPAREN
 	;
 
 AnnotationValue:
 	ElementValuePairs
 	| ElementValue
+	|
 	;
 
 ElementValuePairs:
 	ElementValuePair
-	| ElementValuePairs ElementValuePair
+	| ElementValuePairs COMMA ElementValuePair
 	;
 
 ElementValuePair:
-	IDENTIFIER EQUAL ElementValue
+	IDENTIFIER ASSIGN ElementValue
 	;
 
 ElementValue:
 	Expression
 	| Annotation
-	| ElementValueInitializer
+	| ElementValueArrayInitializer
+	;
+
+ /* Switch For */
+
+SwitchBlockStatementGroupListOptional:
+	SwitchBlockStatementGroupListOptional SwitchBlockStatementGroup
+	|
+	;
+
+SwitchBlockStatementGroup:
+	SwitchLabelList BlockStatementList
+	;
+
+SwitchLabelListOptional:
+	SwitchLabelList
+	|
+	;
+
+SwitchLabelList:
+	SwitchLabel
+	| SwitchLabelList SwitchLabel
+	;
+
+SwitchLabel:
+	CASE Expression COLON
+	| CASE IDENTIFIER COLON
+	| DEFAULT COLON
+	;
+
+
+
+ForControl:
+	EnhancedForControl
+	| ForInitOptional SEMIC Expression SEMIC ExpressionList
+	| ForInitOptional SEMIC SEMIC ExpressionList
+	| ForInitOptional SEMIC Expression SEMIC
+	| ForInitOptional SEMIC SEMIC
+	;
+
+EnhancedForControl:
+	VariableModifierList TypeType VariableDeclaratorId COLON Expression
+	| TypeType VariableDeclaratorId COLON Expression
+	;
+
+ForInitOptional:
+	ForInit
+	|
+	;
+
+ForInit:
+	LocalVariableDecl
+	| ExpressionList
+	;
+
+ /* Expressions */
+
+MethodCall:
+	IDENTIFIER LPAREN ExpressionList RPAREN
+	| IDENTIFIER LPAREN RPAREN
+	| THIS LPAREN ExpressionList RPAREN
+	| THIS LPAREN RPAREN
+	| SUPER LPAREN ExpressionList RPAREN
+	| SUPER LPAREN LPAREN
 	;
 
 Expression:
-	IDENTIFIER;
+	Primary
+	| Expression DOT IDENTIFIER
+	| Expression DOT MethodCall
+	| Expression DOT THIS
+	| Expression DOT NEW NonWildcardTypeArguments InnerCreator
+	| Expression DOT NEW InnerCreator
+	| Expression DOT SUPER SuperSuffix
+	| Expression DOT ExplicitGenericInvocation
+	| Expression LBRACK Expression RBRACK
+	| MethodCall
+	| NEW Creator
+	| LPAREN TypeType RPAREN Expression
+	| Expression INCRE 
+	| Expression DECRE
+	| ADD Expression
+	| SUB Expression
+	| INCRE Expression
+	| DECRE Expression
+	| TILDE Expression
+	| BANG Expression
+	| Expression MUL Expression
+	| Expression DIV Expression
+	| Expression MOD Expression
+	| Expression ADD Expression
+	| Expression SUB Expression
+	| Expression LSHIFT Expression
+	| Expression RSHIFT Expression
+	| Expression URSHIFT Expression
+	| Expression LT Expression
+	| Expression GT Expression
+	| Expression LTOE Expression
+	| Expression GTOE Expression
+	| Expression INSTANCEOF TypeType
+	| Expression EQUAL Expression
+	| Expression NEQUAL Expression
+	| Expression BITAND Expression
+	| Expression CARET Expression
+	| Expression BITOR Expression
+	| Expression AND Expression
+	| Expression OR Expression
+	| Expression QUESTION Expression COLON Expression
+	| Expression AssignOperators Expression
+	| LambdaExpression
+	| Expression DCOLON TypeArgumentsOptional IDENTIFIER
+	| TypeType DCOLON TypeArgumentsOptional IDENTIFIER
+	| TypeType DCOLON TypeArgumentsOptional NEW
+	| ClassType DCOLON TypeArgumentsOptional NEW
+	;
 
-ElementValueInitializer:
+AssignOperators:
+	ASSIGN
+	| ADD_ASSIGN
+	| SUB_ASSIGN
+	| MUL_ASSIGN
+	| DIV_ASSIGN
+	| MOD_ASSIGN
+	| AND_ASSIGN
+	| OR_ASSIGN
+	| XOR_ASSIGN
+	| RSHIFT_ASSIGN
+	| URSHIFT_ASSIGN
+	| LSHIFT_ASSIGN
+	;
+
+LambdaExpression:
+	LambdaParams ARROW LambdaBody
+	;
+
+LambdaParams:
+	IDENTIFIER
+	| LPAREN FormalParameterList RPAREN
+	| LPAREN RPAREN
+	| LPAREN IdentifierListWithComma
+	;
+
+LambdaBody:
+	Expression
+	| Block
+	;
+
+IdentifierListWithComma:
+	IDENTIFIER
+	| IdentifierListWithComma COMMA IDENTIFIER
+	;
+
+ParExpression:
+	LPAREN Expression RPAREN
+	;
+
+ExpressionList:
+	Expression
+	| ExpressionList COMMA Expression
+	; 
+
+ExpressionListWithBrack:
+	LBRACK Expression RBRACK
+	| ExpressionListWithBrack LBRACK Expression RBRACK
+	;
+
+Primary:
+	LPAREN Expression RPAREN
+	| THIS
+	| SUPER
+	| Literal
+	| IDENTIFIER
+	| TypeTypeOrVoid DOT CLASS
+	| NonWildcardTypeArguments ExplicitGenericInvocationSuffix
+	| NonWildcardTypeArguments THIS Arguments
+	;
+
+ClassType:
+	ClassOrInterfaceType DOT AnnotationListOptional IDENTIFIER TypeArguments
+	| ClassOrInterfaceType DOT AnnotationListOptional IDENTIFIER
+	| AnnotationListOptional IDENTIFIER TypeArguments
+	| AnnotationListOptional IDENTIFIER
+	;
+
+Creator:
+	NonWildcardTypeArguments CreatedName ClassCreatorRest
+	| CreatedName ArrayCreatorRest
+	| CreatedName ClassCreatorRest
+	;
+
+CreatedName:
+	IDENTIFIER TypeArgumentsOrDiamondOptional CreatedNameSuffixList
+	| IDENTIFIER TypeArgumentsOrDiamondOptional
+	| PrimitiveType
+	;
+
+CreatedNameSuffixList:
+	DOT IDENTIFIER TypeArgumentsOrDiamondOptional
+	| CreatedNameSuffixList DOT IDENTIFIER TypeArgumentsOrDiamondOptional
+	;
+
+InnerCreator:
+	IDENTIFIER ClassCreatorRest
+	| IDENTIFIER NonWildcardTypeArgumentsOrDiamond ClassCreatorRest
+	;
+
+ArrayCreatorRest:
+	LRBrackList ArrayInitializer
+	| ExpressionListWithBrack LRBrackList
+	| ExpressionListWithBrack
+	;
+
+ClassCreatorRest:
+	Arguments ClassBody
+	| Arguments
+	;
+
+ExplicitGenericInvocation:
+	NonWildcardTypeArguments ExplicitGenericInvocationSuffix
+	;
+
+ElementValueArrayInitializer:
 	LBRACE ElementValues RBRACE
 	| LBRACE ElementValues COMMA RBRACE
+	| LBRACE COMMA RBRACE
+	| LBRACE RBRACE
 	;
 
 ElementValues:
@@ -120,7 +368,12 @@ ElementValues:
 	| ElementValues COMMA ElementValue
 	;
 
-ImportDeclaration:
+ImportDeclListOptional:
+	ImportDeclListOptional ImportDecl { debugInfo("ImportDecl"); }
+	|
+	;
+
+ImportDecl:
 	SingleImportDecl
 	| TypeImportDecl
 	;
@@ -134,8 +387,13 @@ TypeImportDecl:
 	IMPORT QualifiedName DOT MUL SEMIC
 	| IMPORT STATIC QualifiedName DOT MUL SEMIC
 	;
-	
-TypeDeclaration:
+
+TypeDeclListOptional:
+	TypeDeclListOptional TypeDecl
+	|
+	;
+
+TypeDecl:
 	ClassOrInterfaceModifierListOptional ClassDecl
 	| ClassOrInterfaceModifierListOptional EnumDecl
 	| ClassOrInterfaceModifierListOptional InterfaceDecl
@@ -172,6 +430,11 @@ Modifier:
 	| VOLATILE
 	;
 
+ModifierList:
+	Modifier
+	| ModifierList Modifier
+	;
+
 VariableModifier:
 	FINAL
 	| Annotation
@@ -181,20 +444,20 @@ ClassDecl:
 	CLASS IDENTIFIER ClassBody
 	| CLASS IDENTIFIER TypeParams ClassBody
 	| CLASS IDENTIFIER EXTENDS TypeType ClassBody
-	| CLASS IDENTIFIER IMPLEMENTS TypeTypes ClassBody
+	| CLASS IDENTIFIER IMPLEMENTS TypeList ClassBody
 	| CLASS IDENTIFIER TypeParams EXTENDS TypeType ClassBody
-	| CLASS IDENTIFIER TypeParams IMPLEMENTS TypeTypes ClassBody
-	| CLASS IDENTIFIER TypeParams EXTENDS TypeType IMPLEMENTS TypeTypes ClassBody
-	| CLASS IDENTIFIER EXTENDS TypeType IMPLEMENTS TypeTypes ClassBody
+	| CLASS IDENTIFIER TypeParams IMPLEMENTS TypeList ClassBody
+	| CLASS IDENTIFIER TypeParams EXTENDS TypeType IMPLEMENTS TypeList ClassBody
+	| CLASS IDENTIFIER EXTENDS TypeType IMPLEMENTS TypeList ClassBody
 	;
 
 TypeParams:
-	LT DotTypeParams GT
+	LT CommaTypeParams GT
 	;
 
-DotTypeParams:
+CommaTypeParams:
 	TypeParam
-	| DotTypeParams DOT TypeParam
+	| CommaTypeParams COMMA TypeParam
 	;
 
 TypeParam:
@@ -206,7 +469,140 @@ TypeParam:
 
 TypeBound:
 	TypeType
-	| TypeBound AND TypeType
+	| TypeBound BITAND TypeType
+	;
+
+/* We use rule this even for void methods which cannot have [] after parameters.
+   This simplifies grammar and we can consider void to be a type, which
+   renders the [] matching as a context-sensitive issue or a semantic check
+   for invalid return type after parsing.
+ */
+
+MethodBody
+    : Block
+    | COMMA
+    ;
+
+ /* TODO: Finish InterfaceDecl */
+ /* InterfaceBody */
+ /* InterfaceBodyDeclList */
+ /* InterfaceBodyDecl */
+ /* InterfaceMemberDecl ModifierList */
+ /* ClassDecl EnumDecl */
+
+
+ /* ParenListOptional QualifiedNameList MethodBody */
+
+InterfaceDecl:
+	INTERFACE IDENTIFIER TypeParams EXTENDS TypeList InterfaceBody
+	| INTERFACE IDENTIFIER EXTENDS TypeList InterfaceBody
+	| INTERFACE IDENTIFIER TypeParams InterfaceBody
+	| INTERFACE IDENTIFIER InterfaceBody
+	;
+
+InterfaceBody:
+	LPAREN RPAREN
+	| LPAREN InterfaceBodyDeclList RPAREN
+	;
+
+InterfaceBodyDeclList:
+	InterfaceBodyDecl
+	| InterfaceBodyDeclList InterfaceBodyDecl
+	;
+
+FieldDecl:
+	TypeType VariableDeclarators SEMIC
+	;
+
+InterfaceBodyDecl:
+	InterfaceMemberDecl
+	| ModifierList InterfaceMemberDecl
+	| SEMIC
+	;
+
+InterfaceMemberDecl:
+	ConstDecl
+	| InterfaceMethodDecl
+	| GenericInterfaceMethodDecl
+	| InterfaceDecl
+	| AnnotationTypeDecl
+	| ClassDecl
+	| EnumDecl
+	;
+
+ConstDecl:
+	TypeType ConstantDeclaratorWithCommaList SEMIC
+	;
+
+ConstantDeclaratorWithCommaList:
+	ConstantDeclarator
+	| ConstantDeclaratorWithCommaList COMMA ConstantDeclarator
+	;
+
+ConstantDeclarator:
+	IDENTIFIER LRBrackList ASSIGN VariableInitializer
+	| IDENTIFIER ASSIGN VariableInitializer
+	;
+
+InterfaceMethodDecl:
+	InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams LRBrackListOptional THROWS QualifiedNameList MethodBody
+	| InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams LRBrackListOptional MethodBody
+	| InterfaceMethodModifierListOptional TypeParams AnnotationListOptional TypeTypeOrVoid IDENTIFIER FormalParams LRBrackListOptional THROWS QualifiedNameList MethodBody
+	| InterfaceMethodModifierListOptional TypeParams AnnotationListOptional TypeTypeOrVoid IDENTIFIER FormalParams LRBrackListOptional MethodBody
+	;
+
+GenericInterfaceMethodDecl:
+	TypeParams InterfaceMethodDecl
+	;
+
+InterfaceMethodModifierListOptional:
+	| InterfaceMethodModifierListOptional InterfaceMethodModifier
+	|
+	;
+
+InterfaceMethodModifier:
+	Annotation
+	| PUBLIC
+	| ABSTRACT
+	| DEFAULT
+	| STATIC
+	| STRICTFP
+	;
+
+FormalParams:
+	LPAREN FormalParameterList RPAREN
+	| LPAREN RPAREN
+	;
+
+FormalParameterList:
+	FormalParameterWithCommaList COMMA LastFormalParameter
+	| FormalParameterWithCommaList
+	| LastFormalParameter
+	;
+
+FormalParameterWithCommaList:
+	FormalParam
+	| FormalParameterWithCommaList COMMA FormalParam
+	;
+
+LastFormalParameter:
+	VariableModifierList TypeType _ELLIPSIS VariableDeclaratorId
+	| TypeType _ELLIPSIS VariableDeclaratorId
+	;
+
+FormalParam:
+	VariableModifierList TypeType VariableDeclaratorId
+	| TypeType VariableDeclaratorId
+	;
+
+QualifiedNameList:
+	QualifiedName
+	| QualifiedNameList COMMA QualifiedName
+	;
+
+VariableModifierList:
+	VariableModifier
+	| VariableModifierList VariableModifier
 	;
 
 PrimitiveType:
@@ -235,13 +631,18 @@ DotClassOrInterfaceTypeList:
 	|
 	;
 
-TypeArguments:
-	LT DotTypeArguments GT
+TypeArgumentsOptional:
+	TypeArguments
+	|
 	;
 
-DotTypeArguments:
+TypeArguments:
+	LT CommaTypeArguments GT
+	;
+
+CommaTypeArguments:
 	TypeArgument
-	| DotTypeArguments DOT TypeArgument
+	| CommaTypeArguments COMMA TypeArgument
 	;
 
 TypeArgument:
@@ -258,6 +659,19 @@ TypeType:
 	| PrimitiveType LRBrackListOptional
 	;
 
+TypeTypeOrVoid:
+	TypeType
+	| VOID
+	;
+
+GenericConstructorDecl:
+	TypeParams ConstructorDecl
+
+ConstructorDecl:
+	IDENTIFIER FormalParams THROWS QualifiedNameList Block
+	| IDENTIFIER FormalParams Block
+	;
+
 LRBrackListOptional:
 	LRBrackList
 	|
@@ -268,25 +682,295 @@ LRBrackList:
 	| LRBrackList LBRACK RBRACK
 	;
 
-TypeTypes:
+TypeArgumentsOrDiamondOptional:
+	TypeArgumentsOrDiamond
+	|
+	;
+
+TypeArgumentsOrDiamond:
+	LT GT
+	| TypeArguments
+	;
+
+NonWildcardTypeArgumentsOrDiamond:
+	NonWildcardTypeArguments
+	| LT GT
+	;
+
+NonWildcardTypeArguments:
+	LT TypeList GT
+	;
+
+TypeList:
 	TypeType
-	| TypeTypes TypeType
+	| TypeList COMMA TypeType
 	;
 
 AnnotationTypeDecl:
-	_AT INTERFACE IDENTIFIER LPAREN BOOLEAN IDENTIFIER LPAREN RPAREN
+	_AT INTERFACE IDENTIFIER AnnotationTypeBody
 	;
 
-InterfaceDecl:
-	INTERFACE IDENTIFIER LBRACE RBRACE
+AnnotationTypeBody:
+	LBRACE RBRACE
+	| LBRACE AnnotationTypeElementDeclList RBRACE
+	;
+
+AnnotationTypeElementDeclList:
+	AnnotationTypeElementDecl
+	| AnnotationTypeElementDeclList AnnotationTypeElementDecl
+	;
+
+AnnotationTypeElementDecl:
+	ModifierList AnnotationTypeElementRest
+	| AnnotationTypeElementRest
+	| SEMIC
+	;
+
+AnnotationTypeElementRest:
+	TypeType AnnotationMethodOrConstantRest SEMIC
+	| ClassDecl SemicOptional
+	| InterfaceDecl SemicOptional
+	| EnumDecl SemicOptional
+	| AnnotationTypeDecl SemicOptional
+	;
+
+SemicOptional:
+	SEMIC
+	|
+	;
+
+AnnotationMethodOrConstantRest:
+	AnnotationMethodRest
+	| VariableDeclarators
+	;
+
+AnnotationMethodRest:
+	IDENTIFIER LPAREN RPAREN DEFAULT ElementValue
+	| IDENTIFIER LPAREN RPAREN
+	;
+
+VariableDeclarators:
+	VariableDeclarator
+	| VariableDeclarators COMMA VariableDeclarator
+	;
+
+VariableDeclarator:
+	VariableDeclaratorId
+	| VariableDeclaratorId ASSIGN VariableInitializer
+	;
+
+VariableDeclaratorId:
+	IDENTIFIER LRBrackList
+	| IDENTIFIER
+	;
+
+VariableInitializer:
+	ArrayInitializer
+	| Expression
+	;
+VariableInitializerListWithComma:
+	VariableInitializer
+	| VariableInitializerListWithComma COMMA VariableInitializer
+	;
+
+ArrayInitializer:
+	LBRACE VariableInitializerListWithComma COMMA RBRACE
+	| LBRACE VariableInitializerListWithComma RBRACE
+	| LBRACE RBRACE
+	;
+
+ /* Statements / Blocks */
+ /* Finish Block */
+ /* BlockStatement */
+ /* (Statement) */
+Block:
+	LBRACE BlockStatementList RBRACE
+	| LBRACE RBRACE
+	;
+
+BlockStatementList:
+	BlockStatement
+	| BlockStatementList BlockStatement
+	;
+
+BlockStatement:
+	LocalVariableDecl SEMIC
+	| Statement
+	| LocalTypeDecl
+	;
+
+LocalVariableDecl:
+	VariableModifierList TypeType VariableDeclarators
+	| TypeType VariableDeclarators
+	;
+
+LocalTypeDecl:
+	ClassOrInterfaceModifierListOptional ClassDecl
+	| ClassOrInterfaceModifierListOptional InterfaceDecl
+	| SEMIC
+	;
+
+ /* TODO: finish (Statement) */
+Statement:
+	Block
+	| ASSERT Expression COLON Expression SEMIC
+	| ASSERT Expression SEMIC
+	| IF ParExpression Statement ELSE Statement
+	| IF ParExpression Statement
+	| FOR LPAREN ForControl RPAREN Statement
+	| WHILE ParExpression Statement
+	| DO Statement WHILE ParExpression SEMIC
+	| TRY Block CatchClauseList FinallyBlockOptional
+	| TRY Block FinallyBlock
+	| TRY ResourceSpecification Block CatchClauseListOptional FinallyBlockOptional
+	| SWITCH ParExpression LBRACE SwitchBlockStatementGroupListOptional SwitchLabelListOptional RBRACE
+	| SYNCHRONIZED ParExpression Block
+	| RETURN Expression SEMIC
+	| RETURN SEMIC
+	| THROW Expression SEMIC
+	| BREAK IDENTIFIER SEMIC
+	| BREAK SEMIC
+	| CONTINUE IDENTIFIER SEMIC
+	| CONTINUE SEMIC
+	| SEMIC
+	| Expression SEMIC
+	| IDENTIFIER COLON Statement
+	;
+
+CatchClauseListOptional:
+	CatchClauseList
+	|
+	;
+
+CatchClauseList:
+	CatchClause
+	| CatchClauseList CatchClause
+	;
+
+CatchClause:
+	CATCH LPAREN VariableModifierList CatchType IDENTIFIER RPAREN Block
+	| CARET LPAREN CatchType IDENTIFIER RPAREN Block
+	;
+
+CatchType:
+	QualifiedName
+	| CatchType BITOR QualifiedName
+	;
+
+FinallyBlockOptional:
+	FINALLY Block
+	|
+	;
+
+FinallyBlock:
+	FINALLY Block
+	;
+
+ResourceSpecification:
+	LPAREN Resources SEMIC RPAREN
+	| LPAREN Resources RPAREN
+	;
+
+Resources:
+	Resource
+	| Resources SEMIC Resource
+	;
+
+Resource:
+	VariableModifierList ClassOrInterfaceType VariableDeclaratorId ASSIGN Expression
+	| ClassOrInterfaceType VariableDeclaratorId ASSIGN Expression
 	;
 
 EnumDecl:
-	ENUM IDENTIFIER LBRACE RBRACE
+	ENUM IDENTIFIER IMPLEMENTS TypeList LPAREN EnumConstantsOptional COMMA EnumBodyDeclarationsOptional RPAREN
+	| ENUM IDENTIFIER LPAREN EnumConstantsOptional COMMA EnumBodyDeclarationsOptional RPAREN
+	| ENUM IDENTIFIER IMPLEMENTS TypeList LPAREN EnumConstantsOptional EnumBodyDeclarationsOptional RPAREN
+	| ENUM IDENTIFIER LPAREN EnumConstantsOptional EnumBodyDeclarationsOptional RPAREN
+	;
+
+EnumConstantsOptional:
+	EnumConstants
+	|
+	;
+
+EnumConstants:
+	EnumConstant
+	| EnumConstants COMMA EnumConstant
+	;
+
+EnumConstant:
+	AnnotationListOptional IDENTIFIER Arguments ClassBody
+	| AnnotationListOptional IDENTIFIER Arguments
+	| AnnotationListOptional IDENTIFIER ClassBody
+	| AnnotationListOptional IDENTIFIER
+	;
+
+EnumBodyDeclarationsOptional:
+	EnumBodyDeclarations
+	|
+	;
+
+EnumBodyDeclarations:
+	COMMA ClassBodyDeclList
+	| COMMA
 	;
 
 ClassBody:
 	LBRACE RBRACE
+	| LBRACE ClassBodyDeclList RBRACE
+	;
+
+ClassBodyDeclList:
+	ClassBodyDecl
+	| ClassBodyDeclList ClassBodyDecl
+	;
+
+ClassBodyDecl:
+	SEMIC
+	| STATIC Block
+	| Block
+	| ModifierList MemberDecl
+	| MemberDecl
+	;
+
+/* TODO */
+MemberDecl:
+	MethodDecl
+	| GenericMethodDecl
+	| FieldDecl
+	| ConstructorDecl
+	| GenericConstructorDecl
+	| InterfaceDecl
+	| AnnotationTypeDecl
+	| ClassDecl
+	| EnumDecl
+	;
+
+ /* about method */
+
+MethodDecl:
+	TypeTypeOrVoid IDENTIFIER FormalParams LRBrackListOptional THROWS QualifiedNameList MethodBody
+	| TypeTypeOrVoid IDENTIFIER FormalParams LRBrackListOptional MethodBody
+	;
+
+GenericMethodDecl:
+	TypeParams MethodDecl
+	;
+
+SuperSuffix:
+	Arguments
+	| DOT IDENTIFIER Arguments
+	| DOT IDENTIFIER
+	;
+
+ExplicitGenericInvocationSuffix:
+	SUPER SuperSuffix
+	| IDENTIFIER Arguments
+	;
+
+Arguments:
+	LPAREN ExpressionList RPAREN
+	| LPAREN RPAREN
 	;
 %%
 
