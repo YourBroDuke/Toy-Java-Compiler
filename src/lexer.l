@@ -7,7 +7,7 @@
 
 Letter [A-Za-z$_]
 HexDigit [0-9a-fA-F]
-LetterOrDigit [A-Za-z0-9]
+LetterOrDigit [A-Za-z0-9_]
 Digits [0-9]([0-9_]*[0-9])?
 HexDigits {HexDigit}(({HexDigit}|_)*{HexDigit})?
 ExponentPart [eE][+-]?{Digits}

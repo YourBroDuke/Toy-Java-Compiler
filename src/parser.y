@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <string>
 #include <iostream>
+#define YYDEBUG 1
 extern int yylex();
 extern char *yytext;
 void yyerror(const char *s) {
@@ -169,7 +170,7 @@ SwitchLabel:
 
 ForControl:
 	EnhancedForControl
-	| ForInitOptional SEMIC Expression SEMIC ExpressionList
+	| ForInitOptional SEMIC Expression SEMIC ExpressionList { debugInfo("three things all up"); }
 	| ForInitOptional SEMIC SEMIC ExpressionList
 	| ForInitOptional SEMIC Expression SEMIC
 	| ForInitOptional SEMIC SEMIC
@@ -186,7 +187,7 @@ ForInitOptional:
 	;
 
 ForInit:
-	LocalVariableDecl
+	LocalVariableDecl { debugInfo("do local variable decl"); }
 	| ExpressionList
 	;
 
@@ -203,7 +204,7 @@ MethodCall:
 
 Expression:
 	Primary
-	| Expression DOT IDENTIFIER
+	| Expression DOT IDENTIFIER { debugInfo("."); debugInfo($3); }
 	| Expression DOT MethodCall
 	| Expression DOT THIS
 	| Expression DOT NEW NonWildcardTypeArguments InnerCreator
@@ -214,7 +215,7 @@ Expression:
 	| MethodCall
 	| NEW Creator
 	| LPAREN TypeType RPAREN Expression
-	| Expression INCRE 
+	| Expression INCRE { debugInfo("self increment"); }
 	| Expression DECRE
 	| ADD Expression
 	| SUB Expression
@@ -230,7 +231,7 @@ Expression:
 	| Expression LSHIFT Expression
 	| Expression RSHIFT Expression
 	| Expression URSHIFT Expression
-	| Expression LT Expression
+	| Expression LT Expression { debugInfo("lessthan expression"); }
 	| Expression GT Expression
 	| Expression LTOE Expression
 	| Expression GTOE Expression
@@ -244,11 +245,6 @@ Expression:
 	| Expression OR Expression
 	| Expression QUESTION Expression COLON Expression
 	| Expression AssignOperators Expression
-	| LambdaExpression
-	| Expression DCOLON TypeArgumentsOptional IDENTIFIER
-	| TypeType DCOLON TypeArgumentsOptional IDENTIFIER
-	| TypeType DCOLON TypeArgumentsOptional NEW
-	| ClassType DCOLON TypeArgumentsOptional NEW
 	;
 
 AssignOperators:
@@ -266,26 +262,6 @@ AssignOperators:
 	| LSHIFT_ASSIGN
 	;
 
-LambdaExpression:
-	LambdaParams ARROW LambdaBody
-	;
-
-LambdaParams:
-	IDENTIFIER
-	| LPAREN FormalParameterList RPAREN
-	| LPAREN RPAREN
-	| LPAREN IdentifierListWithComma
-	;
-
-LambdaBody:
-	Expression
-	| Block
-	;
-
-IdentifierListWithComma:
-	IDENTIFIER
-	| IdentifierListWithComma COMMA IDENTIFIER
-	;
 
 ParExpression:
 	LPAREN Expression RPAREN
@@ -306,17 +282,10 @@ Primary:
 	| THIS
 	| SUPER
 	| Literal
-	| IDENTIFIER
+	| IDENTIFIER { debugInfo($1); }
 	| TypeTypeOrVoid DOT CLASS
 	| NonWildcardTypeArguments ExplicitGenericInvocationSuffix
 	| NonWildcardTypeArguments THIS Arguments
-	;
-
-ClassType:
-	ClassOrInterfaceType DOT AnnotationListOptional IDENTIFIER TypeArguments
-	| ClassOrInterfaceType DOT AnnotationListOptional IDENTIFIER
-	| AnnotationListOptional IDENTIFIER TypeArguments
-	| AnnotationListOptional IDENTIFIER
 	;
 
 Creator:
@@ -389,12 +358,12 @@ TypeImportDecl:
 	;
 
 TypeDeclListOptional:
-	TypeDeclListOptional TypeDecl
+	TypeDeclListOptional TypeDecl { debugInfo("create one typedecl!"); }
 	|
 	;
 
 TypeDecl:
-	ClassOrInterfaceModifierListOptional ClassDecl
+	ClassOrInterfaceModifierListOptional ClassDecl { debugInfo("This is an classdecl"); }
 	| ClassOrInterfaceModifierListOptional EnumDecl
 	| ClassOrInterfaceModifierListOptional InterfaceDecl
 	| ClassOrInterfaceModifierListOptional AnnotationTypeDecl
@@ -413,17 +382,17 @@ ClassOrInterfaceModifierList:
 
 ClassOrInterfaceModifier:
 	Annotation
-	| PUBLIC
+	| PUBLIC { debugInfo("public"); }
 	| PRIVATE
 	| PROTECTED
-	| STATIC
+	| STATIC { debugInfo("static"); }
 	| ABSTRACT
 	| FINAL
 	| STRICTFP
 	;
 
 Modifier:
-	ClassOrInterfaceModifier
+	ClassOrInterfaceModifier { debugInfo("the modifier is ClassOrinterface"); }
 	| NATIVE
 	| SYNCHRONIZED
 	| TRANSIENT
@@ -441,7 +410,7 @@ VariableModifier:
 	;
 
 ClassDecl:
-	CLASS IDENTIFIER ClassBody
+	CLASS IDENTIFIER ClassBody { debugInfo("CLASS"); debugInfo($2); }
 	| CLASS IDENTIFIER TypeParams ClassBody
 	| CLASS IDENTIFIER EXTENDS TypeType ClassBody
 	| CLASS IDENTIFIER IMPLEMENTS TypeList ClassBody
@@ -479,7 +448,7 @@ TypeBound:
  */
 
 MethodBody
-    : Block
+    : Block { debugInfo("it has something in methodbody"); }
     | COMMA
     ;
 
@@ -631,11 +600,6 @@ DotClassOrInterfaceTypeList:
 	|
 	;
 
-TypeArgumentsOptional:
-	TypeArguments
-	|
-	;
-
 TypeArguments:
 	LT CommaTypeArguments GT
 	;
@@ -660,8 +624,8 @@ TypeType:
 	;
 
 TypeTypeOrVoid:
-	TypeType
-	| VOID
+	TypeType { debugInfo("not void type"); }
+	| VOID { debugInfo("void type"); }
 	;
 
 GenericConstructorDecl:
@@ -784,18 +748,18 @@ ArrayInitializer:
  /* BlockStatement */
  /* (Statement) */
 Block:
-	LBRACE BlockStatementList RBRACE
+	LBRACE BlockStatementList RBRACE { debugInfo("it has something in block"); }
 	| LBRACE RBRACE
 	;
 
 BlockStatementList:
-	BlockStatement
-	| BlockStatementList BlockStatement
+	BlockStatement { debugInfo("last blockstatement"); }
+	| BlockStatementList BlockStatement { debugInfo("create one blockstatement"); }
 	;
 
 BlockStatement:
 	LocalVariableDecl SEMIC
-	| Statement
+	| Statement { debugInfo("this is a statement"); }
 	| LocalTypeDecl
 	;
 
@@ -817,7 +781,7 @@ Statement:
 	| ASSERT Expression SEMIC
 	| IF ParExpression Statement ELSE Statement
 	| IF ParExpression Statement
-	| FOR LPAREN ForControl RPAREN Statement
+	| FOR LPAREN ForControl RPAREN Statement { debugInfo("for statement"); }
 	| WHILE ParExpression Statement
 	| DO Statement WHILE ParExpression SEMIC
 	| TRY Block CatchClauseList FinallyBlockOptional
@@ -917,19 +881,19 @@ EnumBodyDeclarations:
 
 ClassBody:
 	LBRACE RBRACE
-	| LBRACE ClassBodyDeclList RBRACE
+	| LBRACE ClassBodyDeclList RBRACE { debugInfo("it has something in decl"); }
 	;
 
 ClassBodyDeclList:
-	ClassBodyDecl
-	| ClassBodyDeclList ClassBodyDecl
+	ClassBodyDecl { debugInfo("the last classbodydecl"); }
+	| ClassBodyDeclList ClassBodyDecl { debugInfo("create one classbodydecl"); }
 	;
 
 ClassBodyDecl:
 	SEMIC
 	| STATIC Block
 	| Block
-	| ModifierList MemberDecl
+	| ModifierList MemberDecl { debugInfo("modifierlist memberdecl"); }
 	| MemberDecl
 	;
 
@@ -950,7 +914,7 @@ MemberDecl:
 
 MethodDecl:
 	TypeTypeOrVoid IDENTIFIER FormalParams LRBrackListOptional THROWS QualifiedNameList MethodBody
-	| TypeTypeOrVoid IDENTIFIER FormalParams LRBrackListOptional MethodBody
+	| TypeTypeOrVoid IDENTIFIER FormalParams LRBrackListOptional MethodBody { debugInfo("no throw in method decl"); }
 	;
 
 GenericMethodDecl:

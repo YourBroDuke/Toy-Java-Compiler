@@ -1,13 +1,25 @@
-@Nothing
 package org.gilmour.test;
 
 import java.util.Arrays;
-import static java.lang.Math.PI;
+import static java.lang.Math.PI.*;
 
-class Test {
-    public static void main(String[] args) {
-        for (int i = 0; i < args.length; i++)
-            System.out.print(i == 0 ? args[i] : " " + args[i]);
-        System.out.println();
+public class Test {
+    private int testNum;
+    
+    public static int main(String[] args) {
+        int i;
+        double j = 3;
+        i = j + 1;
+        i++;
+	    for (int _i = 0; _i < j; i++) {
+            System.out.println("Hello World!");
+        }
+
+        if (_i == 0) {
+            test_num = i;
+        } else {
+            test_num = j;
+        }
+        return 0;
     }
 }

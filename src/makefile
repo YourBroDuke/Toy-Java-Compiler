@@ -1,20 +1,20 @@
-target = lavac
+ -ttarget = lavac
 CC = g++
 
 $(target):y.tab.o lex.yy.o
-	$(CC) -o $(target)  y.tab.o lex.yy.o 
+	$(CC) -o $(target)  y.tab.o lex.yy.o -lfl -ly
 
-y.tab.c:parser.y
-	yacc -d -Wconflicts-sr parser.y
+y.tab.c:ToyParser.y
+	bison ToyParser.y -d -v --debug
 
 lex.yy.c:lexer.l
 	lex lexer.l
 
 y.tab.o:y.tab.c
-	$(CC) -c y.tab.c
+	$(CC) -c y.tab.c -ly
 
 lex.yy.o:lex.yy.c
-	$(CC) -c lex.yy.c
+	$(CC) -c lex.yy.c -lfl
 
 clean:
 	rm *.o $(target) *.c *.h
