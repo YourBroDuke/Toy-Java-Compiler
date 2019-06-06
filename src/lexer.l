@@ -23,7 +23,7 @@ BinaryLiteral 0[bB][01]([01_]*[01])?[lL]?
 FloatLiteral ({Digits}\.{Digits}?|\.{Digits}){ExponentPart}?[fFdD]?|{Digits}({ExponentPart}[fFdD]?|[fFdD])
 HexFloatLiteral 0[xX]({HexDigits}\.?|{HexDigits}?\.{HexDigits})[pP][+-]?{Digits}[fFdD]?
 CharLiteral '([^\\\r\n]|{EscapeSequence})'
-StringLiteral "([^\\\r\n]|{EscapeSequence})*"
+StringLiteral \"([^"\\\r\n]|{EscapeSequence})*\"
 Identifier {Letter}{LetterOrDigit}*
 %%
 "abstract"      { yylval.token = ABSTRACT; return ABSTRACT; }

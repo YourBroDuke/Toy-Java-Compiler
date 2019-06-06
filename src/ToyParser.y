@@ -448,8 +448,10 @@ MemberDecl:
  /* about method */
 
 MethodDecl:
-	TypeTypeOrVoid IDENTIFIER FormalParams LRBrackListOptional THROWS QualifiedNameList MethodBody
-	| TypeTypeOrVoid IDENTIFIER FormalParams LRBrackListOptional { debugInfo("Reduced MethodDecl"); }
+	TypeType IDENTIFIER FormalParams LRBrackListOptional THROWS QualifiedNameList MethodBody
+	| VOID IDENTIFIER FormalParams LRBrackListOptional THROWS QualifiedNameList MethodBody
+	| TypeType IDENTIFIER FormalParams LRBrackListOptional MethodBody { debugInfo("Reduced MethodDecl"); }
+	| VOID IDENTIFIER FormalParams LRBrackListOptional MethodBody { debugInfo("Reduced MethodDecl"); }
 	;
 
 
@@ -528,7 +530,6 @@ LRBrackList:
 %%
 
 // Hello
-#define  YYFPRINTF (stderr, format, args) fprintf(, "11");
 int main(){
 	#define YYDEBUG 1
 #ifdef YYDEBUG

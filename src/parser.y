@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <string>
 #include <iostream>
-#define YYDEBUG 1
+
 extern int yylex();
 extern char *yytext;
 void yyerror(const char *s) {

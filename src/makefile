@@ -1,11 +1,11 @@
- -ttarget = lavac
+target = lavac
 CC = g++
 
 $(target):y.tab.o lex.yy.o
 	$(CC) -o $(target)  y.tab.o lex.yy.o -lfl -ly
 
 y.tab.c:ToyParser.y
-	bison ToyParser.y -d -v --debug
+	yacc ToyParser.y -d -v --debug
 
 lex.yy.c:lexer.l
 	lex lexer.l

@@ -1,0 +1,25 @@
+package: PACKAGE identifier.identifier.identifier;
+
+import id.id.id;
+
+modifier class id{
+    typeNotVoid id;
+
+    FuncModifier type id(params){
+        type decl;
+        if (expr){
+            stmt
+        } else{
+            stmt
+        }
+
+        for (stmt){
+            stmt
+        }
+
+        printf(expr);
+    }
+}
+
+
+stmt: a++; a=b+c;
