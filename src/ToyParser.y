@@ -1,8 +1,10 @@
 %{
+#include "node.h"
 #include <cstdio>
 #include <cstdlib>
 #include <string>
 #include <iostream>
+#include <vector>
 extern int yylex();
 extern char *yytext;
 void yyerror(const char *s) {
@@ -11,6 +13,8 @@ void yyerror(const char *s) {
 	exit(1);
 }
 using namespace std;
+FileNode *rootNode = new FileNode();
+
 #define DEBUG
 
 void debugInfo(const char* s){
@@ -28,6 +32,9 @@ void debugInfo(string *s){
 %union {
 	std::string *string;
 	int token;
+	Node *node;
+	vector<ImportNode*> *importNodes;
+	vector<TypeDeclNode*> *typeDeclNodes;
 }
 
 /* Define our terminal symbols (tokens). This should
@@ -50,6 +57,10 @@ void debugInfo(string *s){
 %token <token> OR_ASSIGN XOR_ASSIGN MOD_ASSIGN LSHIFT_ASSIGN RSHIFT_ASSIGN
 %token <token> URSHIFT URSHIFT_ASSIGN NULL_LITERAL TRUE_LITERAL FALSE_LITERAL
 
+%type <node> CompilationUnit PackageDecl  TypeDecl
+%type <node> ClassDecl ClassBodyDecl QualifiedName 
+%type <importNodes> ImportDeclListOptional
+%type <typeDeclNodes> TypeDeclListOptional
 /* Define the type of node our nonterminal symbols represent.
    The types refer to the %union declaration above. Ex: when
    we call an ident (defined by union type ident) we are really
@@ -64,17 +75,25 @@ void debugInfo(string *s){
 %%
 
 CompilationUnit:
-	PackageDecl ImportDeclListOptional TypeDeclListOptional
-	| ImportDeclListOptional TypeDeclListOptional
+	PackageDecl ImportDeclListOptional TypeDeclListOptional {
+		rootNode->packageNode = dynamic_cast<PackageNode*>($1);
+		rootNode->importNodes = $2;
+		rootNode->typeDeclNodes = $3;
+	}
+	| ImportDeclListOptional TypeDeclListOptional {
+		rootNode->packageNode = NULL;
+		rootNode->importNodes = $1;
+		rootNode->typeDeclNodes = $2;
+	}
 	;
 
 PackageDecl:
-	PACKAGE QualifiedName SEMIC { debugInfo("Reduced PackageDecl"); }
+	PACKAGE QualifiedName SEMIC { $$ = new PackageNode(dynamic_cast<QualifiedNameNode*>($2)); }
 	;
 
 ImportDeclListOptional:
-	ImportDeclListOptional ImportDecl { debugInfo("Reduced ImportDeclListOptional"); }
-	|
+	ImportDeclListOptional ImportDecl {  }
+	| { $$ = new vector<ImportNode*>; }
 	;
 
 ImportDecl:
@@ -94,18 +113,25 @@ TypeImportDecl:
 
  /*  TypeDecl */
 TypeDeclListOptional:
-	TypeDeclListOptional TypeDecl { debugInfo("Reduced TypeDeclListOptional"); }
-	|
+	TypeDeclListOptional TypeDecl { 
+		$1->push_back(dynamic_cast<TypeDeclNode*>($2));
+		$$ = $1;
+	}
+	| {$$ = new vector<TypeDeclNode*>;}
 	;
 
 TypeDecl:
-	ClassOrInterfaceModifierListOptional ClassDecl { debugInfo("Reduced TypeDecl"); }
+	ClassOrInterfaceModifierListOptional ClassDecl { 
+		$$ = new TypeDeclNode(Class, dynamic_cast<ClassDeclNode*>($2));
+	}
 	| ClassOrInterfaceModifierListOptional InterfaceDecl { debugInfo("This is an Interface declaration"); }
-	| SEMIC
+	| SEMIC {$$ = NULL;}
 	;
 
 ClassDecl:
-	CLASS IDENTIFIER ClassBody { debugInfo("Reduced ClassDecl"); }
+	CLASS IDENTIFIER ClassBody { 
+		$$ = new ClassDeclNode(*$2, NULL);
+	 }
 	| CLASS IDENTIFIER IMPLEMENTS TypeList ClassBody
 	;
 
@@ -448,18 +474,24 @@ MemberDecl:
  /* about method */
 
 MethodDecl:
-	TypeType IDENTIFIER FormalParams LRBrackListOptional THROWS QualifiedNameList MethodBody
-	| VOID IDENTIFIER FormalParams LRBrackListOptional THROWS QualifiedNameList MethodBody
-	| TypeType IDENTIFIER FormalParams LRBrackListOptional MethodBody { debugInfo("Reduced MethodDecl"); }
-	| VOID IDENTIFIER FormalParams LRBrackListOptional MethodBody { debugInfo("Reduced MethodDecl"); }
+	TypeType IDENTIFIER FormalParams THROWS QualifiedNameList MethodBody
+	| VOID IDENTIFIER FormalParams THROWS QualifiedNameList MethodBody
+	| TypeType IDENTIFIER FormalParams MethodBody { debugInfo("Reduced MethodDecl"); }
+	| VOID IDENTIFIER FormalParams MethodBody { debugInfo("Reduced MethodDecl"); }
 	;
 
 
  /* Some lower Non-terminals */
 
 QualifiedName:
-	IDENTIFIER { debugInfo($1); }
-	| QualifiedName DOT IDENTIFIER { debugInfo("."); debugInfo($3); }
+	IDENTIFIER { 
+		$$ = new QualifiedNameNode();
+		dynamic_cast<QualifiedNameNode*>($$)->identifiers->push_back(new IdentifierNode(*$1));
+	}
+	| QualifiedName DOT IDENTIFIER { 
+		dynamic_cast<QualifiedNameNode*>($1)->identifiers->push_back(new IdentifierNode(*$3));
+		$$ = $1;
+	 }
 	;
 
 
@@ -537,4 +569,5 @@ int main(){
 #endif
 	cout << yydebug << endl;
 	yyparse();
+	rootNode->Visit();
 }

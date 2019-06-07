@@ -2,6 +2,8 @@
 %{
 #include <stdio.h>
 #include <string>
+#include "node.h"
+#include <vector>
 #include "y.tab.h"
 %}
 
