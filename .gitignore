@@ -5,3 +5,4 @@ src/lex.yy.c
 lavac
 y.tab.*
 lex.yy.*
+src/y.output

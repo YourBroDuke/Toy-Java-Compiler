@@ -56,11 +56,29 @@ void debugInfo(string *s){
 %token <token> DECRE ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN AND_ASSIGN
 %token <token> OR_ASSIGN XOR_ASSIGN MOD_ASSIGN LSHIFT_ASSIGN RSHIFT_ASSIGN
 %token <token> URSHIFT URSHIFT_ASSIGN NULL_LITERAL TRUE_LITERAL FALSE_LITERAL
+%token <token> SINGLES ASSIGNS
 
 %type <node> CompilationUnit PackageDecl  TypeDecl
 %type <node> ClassDecl ClassBodyDecl QualifiedName 
 %type <importNodes> ImportDeclListOptional
 %type <typeDeclNodes> TypeDeclListOptional
+
+%left ASSIGNS
+%left OR
+%left AND
+%left BITOR
+%left CARET
+%left BITAND
+%left EQUAL NEQUAL
+%left LT GT LTOE GTOE INSTANCEOF
+%left LSHIFT RSHIFT URSHIFT
+%left ADD SUB
+%left MUL DIV MOD
+%left SINGLES
+%left LPAREN LBRACK DOT
+
+%right ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN AND_ASSIGN OR_ASSIGN XOR_ASSIGN LSHIFT_ASSIGN RSHIFT_ASSIGN URSHIFT_ASSIGN 
+%right BANG TILDE INCRE DECRE
 /* Define the type of node our nonterminal symbols represent.
    The types refer to the %union declaration above. Ex: when
    we call an ident (defined by union type ident) we are really
@@ -151,31 +169,20 @@ ClassBodyDeclList:
 	;
 
 ClassBodyDecl:
-	ModifierList MemberDecl { debugInfo("Reduced ClassBodyDecl"); }
-	| MemberDecl
+	MemberDecl { debugInfo("Reduced ClassBodyDecl"); }
 	;
 
 ForControl:
-	EnhancedForControl
-	| ForInitOptional SEMIC Expression SEMIC ExpressionList { debugInfo("three things all up"); }
+	ForInitOptional SEMIC Expression SEMIC ExpressionList { debugInfo("three things all up"); }
 	| ForInitOptional SEMIC SEMIC ExpressionList
 	| ForInitOptional SEMIC Expression SEMIC
 	| ForInitOptional SEMIC SEMIC
 	;
 
-EnhancedForControl:
-	VariableModifierList TypeType VariableDeclaratorId COLON Expression
-	| TypeType VariableDeclaratorId COLON Expression
-	;
-
 ForInitOptional:
-	ForInit
-	|
-	;
-
-ForInit:
 	LocalVariableDecl { debugInfo("do local variable decl"); }
 	| ExpressionList
+	|
 	;
 
  /* Expressions */
@@ -189,16 +196,17 @@ Expression:
 	Primary
 	| Expression DOT IDENTIFIER { debugInfo("."); debugInfo($3); }
 	| Expression DOT MethodCall { debugInfo("."); debugInfo("methodCall"); }
+	| Expression DOT CLASS
 	| Expression LBRACK Expression RBRACK
 	| MethodCall
-	| Expression INCRE { debugInfo("self increment"); }
-	| Expression DECRE { debugInfo("self decrement"); }
-	| ADD Expression
-	| SUB Expression
-	| INCRE Expression
-	| DECRE Expression
-	| TILDE Expression
-	| BANG Expression
+	| Expression INCRE %prec INCRE { debugInfo("self increment"); }
+	| Expression DECRE %prec INCRE { debugInfo("self decrement"); }
+	| ADD Expression %prec SINGLES
+	| SUB Expression %prec SINGLES
+	| INCRE Expression %prec SINGLES
+	| DECRE Expression %prec SINGLES
+	| TILDE Expression %prec SINGLES
+	| BANG Expression %prec SINGLES
 	| Expression MUL Expression
 	| Expression DIV Expression
 	| Expression MOD Expression
@@ -219,7 +227,7 @@ Expression:
 	| Expression BITOR Expression
 	| Expression AND Expression
 	| Expression OR Expression
-	| Expression AssignOperators Expression
+	| Expression AssignOperators Expression %prec ASSIGNS
 	;
 
 AssignOperators:
@@ -253,14 +261,8 @@ Primary:
 	| SUPER
 	| Literal
 	| IDENTIFIER { debugInfo($1); }
-	| TypeTypeOrVoid DOT CLASS
 	;
 
-
-ModifierList:
-	Modifier { debugInfo("Reduced ModifierList"); }
-	| ModifierList Modifier { debugInfo("Reduced ModifierList"); }
-	;
 
 VariableModifier:
 	FINAL
@@ -274,7 +276,7 @@ VariableModifier:
 
 MethodBody:
     Block { debugInfo("it has something in methodbody"); }
-    | COMMA
+    | SEMIC
     ;
 
 
@@ -295,7 +297,6 @@ FieldDecl:
 
 InterfaceBodyDecl:
 	InterfaceMemberDecl
-	| ModifierList InterfaceMemberDecl
 	| SEMIC
 	;
 
@@ -495,23 +496,9 @@ QualifiedName:
 	;
 
 
-
-Modifier:
-	ClassOrInterfaceModifier
-	| NATIVE
-	| SYNCHRONIZED
-	| TRANSIENT
-	| VOLATILE
-	;
-
 ClassOrInterfaceModifierListOptional:
-	ClassOrInterfaceModifierList { debugInfo("Reduced ClassOrInterfaceModifierListOptional"); }
+	ClassOrInterfaceModifierListOptional ClassOrInterfaceModifier { debugInfo("Reduced ClassOrInterfaceModifierListOptional"); }
 	|
-	;
-
-ClassOrInterfaceModifierList:
-	ClassOrInterfaceModifier
-	| ClassOrInterfaceModifierList ClassOrInterfaceModifier
 	;
 
 ClassOrInterfaceModifier:
@@ -548,7 +535,7 @@ FloatLiteral:
 
 
 LRBrackListOptional:
-	LRBrackList
+	LRBrackListOptional LBRACK RBRACK
 	|
 	;
 
