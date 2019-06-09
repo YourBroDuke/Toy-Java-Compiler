@@ -1,9 +1,15 @@
 #include "Generator.hpp"
 
-JasminFileGenerator::JasminFileGenerator()
+JasminFileGenerator::JasminFileGenerator(JContext *context)
 {
+    this->context = context;
 }
 
 JasminFileGenerator::~JasminFileGenerator()
 {
+}
+
+
+bool JasminFileGenerator::Generate(){
+    
 }
