@@ -26,4 +26,4 @@ clean:
 	rm *.o $(target) y.tab.c y.tab.h lex.yy.c
 
 test:
-	cat testCases/Package.txt | ./lavac
+	cat testCases/hello.txt | ./lavac
