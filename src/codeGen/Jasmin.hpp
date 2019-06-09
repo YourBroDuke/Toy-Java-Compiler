@@ -19,13 +19,18 @@ using namespace std;
     [.inner interface [<access>] [<name>] [inner <classname>] [outer <name>]]*
 }
  */
+struct JClassSpec{
+    string accessSpec;
+    string className;
+};
+
 class JasminHeader{
-    private:
+    public:
         // optional
         string *bytecodeVersion;
         // optinal 
         string *sourceFile;
-        string *classSpec;
+        JClassSpec *classSpec;
         string *superSpec;
         string *implements;
         // optinal 
@@ -61,8 +66,15 @@ class JField{
     .end method
 }
  */
+struct JDescriptor{
+    vector<string> *params;
+    string ret;
+
+    string toString();
+}
+
 class JMethod{
-    private:
+    public:
         string *accessSpec;
         string *methodName;
         string *descriptor;
@@ -116,23 +128,16 @@ class JInstructionStmt : public JStmt{
         string toString();
 };
 
-class JClassSpec{
-    private:
-        string *accessSpec;
-        string *className;
-    public:
-        JClassSpec();
-        ~JClassSpec();
-};
-
 class JasminFile{
-    private:
+    public:
         JasminHeader *jasminHeader;
         // optional 
         vector<JField> *JFields;
+        // optional
         vector<JMethod> *JMethods;
     
     public:
+
         JasminFile();
         ~JasminFile();
 };

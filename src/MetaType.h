@@ -1,6 +1,9 @@
 #ifndef METATYPE_H
 #define METATYPE_H
 
+#include <unordered_map>
+using namespace std;
+
 enum ClassOrInterface {
     CLASS_TYPE,
     INTERFACE_TYPE
@@ -15,6 +18,17 @@ enum ModifierType {
 	STATIC_TYPE,
 	STRICTFP_TYPE,
     FINAL_TYPE
+};
+
+const unordered_map<ModifierType, string> ModifierMap = {
+    {PUBLIC_TYPE, "public"},
+    {PROTECTED_TYPE, "protect"},
+    {PRIVATE_TYPE, "private"},
+    {ABSTRACT_TYPE, "abstract"},
+    {DEFAULT_TYPE, "default"},
+    {STATIC_TYPE, "static"},
+    {STRICTFP_TYPE, "strictfp"},
+    {FINAL_TYPE, "final"},
 };
 
 enum PrimitiveTypeOrNot {
@@ -86,7 +100,7 @@ enum ExprType {
     OP_LSHIFT_ASN,
     OP_RSHIFT_ASN,
     OP_URSHIFT_ASN
-}
+};
 
 enum PrimaryNodeType {
     PRIMARY_EXPR,
