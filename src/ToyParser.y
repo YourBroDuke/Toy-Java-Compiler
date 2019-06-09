@@ -35,6 +35,11 @@ void debugInfo(string *s){
 	Node *node;
 	vector<ImportNode*> *importNodes;
 	vector<TypeDeclNode*> *typeDeclNodes;
+	vector<MemberDeclNode*> *memberDecls;
+	vector<ModifierType> *memberModifiers;
+	ModifierType memberModifierType;
+	vector<IdentifierNode*> ids;
+
 }
 
 /* Define our terminal symbols (tokens). This should
@@ -59,9 +64,12 @@ void debugInfo(string *s){
 %token <token> SINGLES ASSIGNS
 
 %type <node> CompilationUnit PackageDecl  TypeDecl
-%type <node> ClassDecl ClassBodyDecl QualifiedName 
+%type <node> ClassDecl ClassBodyDecl QualifiedName ClassBody 
 %type <importNodes> ImportDeclListOptional
 %type <typeDeclNodes> TypeDeclListOptional
+%type <memberModifiers> MemberModifierListOptional
+%type <memberModifierType> MemberModifier
+%type <memberDecls> ClassBodyDeclList
 
 %left ASSIGNS
 %left OR
@@ -131,7 +139,7 @@ TypeImportDecl:
 
  /*  TypeDecl */
 TypeDeclListOptional:
-	TypeDeclListOptional TypeDecl { 
+	TypeDeclListOptional TypeDecl {
 		$1->push_back(dynamic_cast<TypeDeclNode*>($2));
 		$$ = $1;
 	}
@@ -139,8 +147,9 @@ TypeDeclListOptional:
 	;
 
 TypeDecl:
-	ClassOrInterfaceModifierListOptional ClassDecl { 
-		$$ = new TypeDeclNode(Class, dynamic_cast<ClassDeclNode*>($2));
+	ClassOrInterfaceModifierListOptional ClassDecl {
+		$$ = new TypeDeclNode(CLASS, dynamic_cast<ClassDeclNode*>($2));
+		$$->modifiers = $1;
 	}
 	| ClassOrInterfaceModifierListOptional InterfaceDecl { debugInfo("This is an Interface declaration"); }
 	| SEMIC {$$ = NULL;}
@@ -148,9 +157,11 @@ TypeDecl:
 
 ClassDecl:
 	CLASS IDENTIFIER ClassBody { 
-		$$ = new ClassDeclNode(*$2, NULL);
-	 }
-	| CLASS IDENTIFIER IMPLEMENTS TypeList ClassBody
+		$$ = new ClassDeclNode(*$2, $3);
+	}
+	| CLASS IDENTIFIER IMPLEMENTS TypeList ClassBody {
+		$$ = new ClassDeclNode(*$2, $5);
+	}
 	;
 
 InterfaceDecl:
@@ -159,17 +170,25 @@ InterfaceDecl:
 
  /* ClassBody */
 ClassBody:
-	LBRACE RBRACE
-	| LBRACE ClassBodyDeclList RBRACE { debugInfo("Reduced ClassBody"); }
+	LBRACE RBRACE {
+		$$ = new ClassBodyNode();
+		$$->memberDecls = new vector<MemberDeclNode*>;
+	}
+	| LBRACE ClassBodyDeclList RBRACE {
+		$$ = new ClassBodyNode();
+		$$->memberDecls = $2;
+	}
 	;
 
 ClassBodyDeclList:
-	ClassBodyDecl { debugInfo("the last classbodydecl"); }
-	| ClassBodyDeclList ClassBodyDecl { debugInfo("create one classbodydecl"); }
-	;
-
-ClassBodyDecl:
-	MemberDecl { debugInfo("Reduced ClassBodyDecl"); }
+	MemberDecl {
+		$$ = new vector<MemberDeclNode*>;
+		$$->push_back($1);
+	}
+	| ClassBodyDeclList MemberDecl {
+		$1->push_back($2);
+		$$ = $1;
+	}
 	;
 
 ForControl:
@@ -187,18 +206,22 @@ ForInitOptional:
 
  /* Expressions */
 
-MethodCall:
-	IDENTIFIER LPAREN ExpressionList RPAREN
-	| IDENTIFIER LPAREN RPAREN
+MethodCallWithoutName:
+	LPAREN ExpressionList RPAREN { $$ = new MethodCallParamsNode(); $$->exprs = $2; }
+	| LPAREN RPAREN
 	;
 
 Expression:
-	Primary
-	| Expression DOT IDENTIFIER { debugInfo("."); debugInfo($3); }
-	| Expression DOT MethodCall { debugInfo("."); debugInfo("methodCall"); }
-	| Expression DOT CLASS
-	| Expression LBRACK Expression RBRACK
-	| MethodCall
+	Primary { $$ = new ExprNode(PRIMARY_TYPE, $1); }
+	| IdentifierListWithDot { }
+	| IdentifierListWithDot MethodCallWithoutName {
+		$$ = new ExprNode(IDEN_DOT_METHOD);
+		$$->ids = $1;
+		$$->methodCallParams = $2;
+	}
+	| IDENTIFIER LBRACK Expression RBRACK
+	| IdentifierListWithDot LBRACK Expression RBRACK
+	| IDENTIFIER MethodCallWithoutName
 	| Expression INCRE %prec INCRE { debugInfo("self increment"); }
 	| Expression DECRE %prec INCRE { debugInfo("self decrement"); }
 	| ADD Expression %prec SINGLES
@@ -219,7 +242,6 @@ Expression:
 	| Expression GT Expression
 	| Expression LTOE Expression
 	| Expression GTOE Expression
-	| Expression INSTANCEOF TypeType
 	| Expression EQUAL Expression
 	| Expression NEQUAL Expression
 	| Expression BITAND Expression
@@ -251,15 +273,21 @@ ParExpression:
 	;
 
 ExpressionList:
-	Expression
-	| ExpressionList COMMA Expression
+	Expression {
+		$$ = new vector<ExprNode*>;
+		$$->push_back($1);
+	}
+	| ExpressionList COMMA Expression {
+		$1->push_back($3);
+		$$ = $1;
+	}
 	;
 
 Primary:
-	LPAREN Expression RPAREN
-	| THIS
-	| SUPER
-	| Literal
+	LPAREN Expression RPAREN {  }
+	| THIS {  }
+	| SUPER {  }
+	| Literal { $$ = new PrimaryNode(PRIMARY_LITERAL, $1); }
 	| IDENTIFIER { debugInfo($1); }
 	;
 
@@ -275,8 +303,8 @@ VariableModifier:
  */
 
 MethodBody:
-    Block { debugInfo("it has something in methodbody"); }
-    | SEMIC
+    Block { $$ = $1; }
+    | SEMIC { $$ = NULL; }
     ;
 
 
@@ -317,6 +345,21 @@ InterfaceMethodModifierListOptional:
 	|
 	;
 
+MemberModifierListOptional:
+	MemberModifierListOptional MemberModifier { $1->push_back($2); $$ = $1; }
+	| { $$ = new vector<ModifierType>; }
+	;
+
+MemberModifier:
+	PUBLIC { $$ = PUBLIC_TYPE; }
+	| PROTECTED { $$ = PROTECTED_TYPE; }
+	| PRIVATE { $$ = PRIVATE_TYPE; }
+	| ABSTRACT { $$ = ABSTRACT_TYPE; }
+	| DEFAULT { $$ = DEFAULT_VAL; }
+	| STATIC { $$ = DEFAULT_VAL; }
+	| STRICTFP { $$ = STRICTFP_TYPE; }
+	;
+
 InterfaceMethodModifier:
     PUBLIC
 	| ABSTRACT
@@ -328,18 +371,26 @@ InterfaceMethodModifier:
  /* About params */
 
 FormalParams:
-	LPAREN FormalParameterWithCommaList RPAREN { debugInfo("params"); }
-	| LPAREN RPAREN
+	LPAREN FormalParameterWithCommaList RPAREN { $$ = $2; }
+	| LPAREN RPAREN { $$ = new vector<FormalParamNode*>; }
 	;
 
 FormalParameterWithCommaList:
-	FormalParam
-	| FormalParameterWithCommaList COMMA FormalParam
+	FormalParam {
+		$$ = new vector<FormalParamNode*>;
+		$$->push_back($1);
+	}
+	| FormalParameterWithCommaList COMMA FormalParam {
+		$1->push_back($3);
+		$$ = $1;
+	}
 	;
 
 
 FormalParam:
-	TypeType VariableDeclaratorId
+	TypeType VariableDeclaratorId {
+		$$ = new FormalParamNode($1, $2);
+	}
 	;
 
  /* ---- End Params ----*/
@@ -365,19 +416,27 @@ PrimitiveType:
 	| DOUBLE
 	;
 
-ClassOrInterfaceType:
-	IDENTIFIER DotClassOrInterfaceTypeList
-	;
-
-DotClassOrInterfaceTypeList:
-	DotClassOrInterfaceTypeList DOT IDENTIFIER
-	|
+IdentifierListWithDot:
+	IDENTIFIER DOT IDENTIFIER {
+		$$ = new vector<IdentifierNode*>;
+		$$->push_back(new IdentifierNode(*$1));
+		$$->push_back(new IdentifierNode(*$3));
+	}
+	| IdentifierListWithDot DOT IDENTIFIER {
+		$1->push_back(new IdentifierNode(*$3));
+		$$ = $1;
+	}
 	;
 
 
 TypeType:
-	ClassOrInterfaceType LRBrackListOptional
-	| PrimitiveType LRBrackListOptional
+	IdentifierListWithDot { } 
+	| IDENTIFIER {
+		$$ = new TypeTypeNode(NONPR_TYPE);
+		$$->typeInfo = new vector<IdentifierNode*>;
+		$$->typeInfo->push_back(new IdentifierNode(*$1));
+	}
+	| PrimitiveType LRBrackListOptional { }
 	;
 
 TypeTypeOrVoid:
@@ -408,8 +467,12 @@ VariableDeclarator:
 	;
 
 VariableDeclaratorId:
-	IDENTIFIER LRBrackList
-	| IDENTIFIER
+	IDENTIFIER LRBrackList {
+		$$ = new VariableDeclaratorIdNode($2, *$1);
+	}
+	| IDENTIFIER {
+		$$ = new VariableDeclaratorIdNode(0, *$1);
+	}
 	;
 
 VariableInitializer:
@@ -432,18 +495,34 @@ ArrayInitializer:
  /* BlockStatement */
  /* (Statement) */
 Block:
-	LBRACE BlockStatementList RBRACE { debugInfo("it has something in block"); }
-	| LBRACE RBRACE
+	LBRACE BlockStatementList RBRACE {
+		$$ = new BlockNode();
+		$$->stats = $2;
+	}
+	| LBRACE RBRACE {
+		$$ = new BlockNode();
+		$$->stats = new vector<BlockStatementNode*>;
+	}
 	;
 
 BlockStatementList:
-	BlockStatement { debugInfo("last blockstatement"); }
-	| BlockStatementList BlockStatement { debugInfo("create one blockstatement"); }
+	BlockStatement {
+		$$ = new vector<BlockStatementNode*>;
+		$$->push_back($1);
+	}
+	| BlockStatementList BlockStatement {
+		$1->push_back($2);
+		$$ = $1;
+	}
 	;
 
 BlockStatement:
-	LocalVariableDecl SEMIC { debugInfo("decl variable in method"); }
-	| Statement { debugInfo("this is a statement"); }
+	LocalVariableDecl SEMIC {
+		$$ = NULL;
+	}
+	| Statement {
+		$$ = new BlockStatementNode($1);
+	}
 	;
 
 LocalVariableDecl:
@@ -454,31 +533,39 @@ LocalVariableDecl:
 
  /* TODO: finish (Statement) */
 Statement:
-	Block
+	Block {  }
 	| IF ParExpression Statement ELSE Statement { debugInfo("if () else ()"); }
-	| IF ParExpression Statement
+	| IF ParExpression Statement {  }
 	| FOR LPAREN ForControl RPAREN Statement { debugInfo("for statement"); }
-	| RETURN Expression SEMIC
+	| RETURN Expression SEMIC {  }
 	| RETURN SEMIC { debugInfo("return;"); }
-	| SEMIC
-	| Expression SEMIC
+	| SEMIC {  }
+	| Expression SEMIC {
+		$$ = new StatementNode(EXPR_TYPE, $1);
+	}
 	;
 
 
 MemberDecl:
-	MethodDecl { debugInfo("Reduced MemberDecl"); }
-	| FieldDecl { debugInfo("Reduced from FieldDecl"); }
-	| ConstructorDecl
-	| InterfaceDecl
+	MemberModifierListOptional MethodDecl {
+		$$ = new MemberDeclNode($2);
+		$$->modifiers = $1;
+	}
+	| MemberModifierListOptional FieldDecl { debugInfo("Reduced from FieldDecl"); }
+	| MemberModifierListOptional ConstructorDecl { }
+	| MemberModifierListOptional InterfaceDecl { }
 	;
 
  /* about method */
 
 MethodDecl:
-	TypeType IDENTIFIER FormalParams THROWS QualifiedNameList MethodBody
-	| VOID IDENTIFIER FormalParams THROWS QualifiedNameList MethodBody
+	TypeType IDENTIFIER FormalParams THROWS QualifiedNameList MethodBody { }
+	| VOID IDENTIFIER FormalParams THROWS QualifiedNameList MethodBody { }
 	| TypeType IDENTIFIER FormalParams MethodBody { debugInfo("Reduced MethodDecl"); }
-	| VOID IDENTIFIER FormalParams MethodBody { debugInfo("Reduced MethodDecl"); }
+	| VOID IDENTIFIER FormalParams MethodBody {
+		$$ = new MethodDeclNode(new TypeTypeNode(VOID_TYPE), *$2, $4);
+		$$->params = $3;
+	}
 	;
 
 
@@ -497,40 +584,35 @@ QualifiedName:
 
 
 ClassOrInterfaceModifierListOptional:
-	ClassOrInterfaceModifierListOptional ClassOrInterfaceModifier { debugInfo("Reduced ClassOrInterfaceModifierListOptional"); }
-	|
+	ClassOrInterfaceModifierListOptional ClassOrInterfaceModifier {
+		$1->push_back($2);
+		$$ = $1;
+	}
+	| { $$ = new vector<ModifierType>; }
 	;
 
 ClassOrInterfaceModifier:
-	PUBLIC { debugInfo("public"); }
-	| PRIVATE { debugInfo("private"); }
-	| PROTECTED { debugInfo("protected"); }
-	| STATIC { debugInfo("static"); }
-	| ABSTRACT { debugInfo("abstract"); }
-	| FINAL { debugInfo("final"); }
-	| STRICTFP { debugInfo("strictfp"); }
+	PUBLIC { $$ = PUBLIC_TYPE; }
+	| PRIVATE { $$ = PRIVATE_TYPE; }
+	| PROTECTED { $$ = PROTECTED_TYPE; }
+	| STATIC { $$ = STATIC_TYPE; }
+	| ABSTRACT { $$ = ABSTRACT_TYPE; }
+	| FINAL { $$ = FINAL_TYPE; }
+	| STRICTFP { $$ = STRICTFP_TYPE; }
 	;
 
 Literal:
-	IntegerLiteral
-	| FloatLiteral
-	| CHAR_LITERAL
-	| STRING_LITERAL
-	| TRUE_LITERAL
-	| FALSE_LITERAL
-	| NULL_LITERAL
-	;
-
-IntegerLiteral:
-	DECIMAL_LITERAL
-	| HEX_LITERAL
-	| OCT_LITERAL
-	| BINARY_LITERAL
-	;
-
-FloatLiteral:
-	FLOAT_LITERAL
-	| HEXFLOAT_LITERAL
+	DECIMAL_LITERAL { }
+	| HEX_LITERAL { }
+	| OCT_LITERAL { }
+	| BINARY_LITERAL { }
+	| FLOAT_LITERAL { }
+	| HEXFLOAT_LITERAL { }
+	| CHAR_LITERAL { }
+	| STRING_LITERAL { $$ = new LiteralNode(STRING_LIT, *$1); }
+	| TRUE_LITERAL { }
+	| FALSE_LITERAL { }
+	| NULL_LITERAL { }
 	;
 
 
@@ -549,12 +631,12 @@ LRBrackList:
 %%
 
 // Hello
-int main(){
+int main() {
 	#define YYDEBUG 1
 #ifdef YYDEBUG
   yydebug = 1;
 #endif
 	cout << yydebug << endl;
 	yyparse();
-	rootNode->Visit();
+	// rootNode->Visit();
 }
