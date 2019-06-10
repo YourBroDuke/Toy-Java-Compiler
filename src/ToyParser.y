@@ -444,13 +444,17 @@ IdentifierListWithDot:
 
 
 TypeType:
-	IdentifierListWithDot { } 
+	IdentifierListWithDot { }
 	| IDENTIFIER {
 		$$ = new TypeTypeNode(NONPR_TYPE);
 		$$->typeInfo = new vector<IdentifierNode*>;
 		$$->typeInfo->push_back(new IdentifierNode(*$1));
 	}
-	| PrimitiveType LRBrackListOptional { }
+	| IDENTIFIER LRBrackList {
+
+	}
+	| PrimitiveType { }
+	| PrimitiveType LRBrackList { }
 	;
 
 TypeTypeOrVoid:
@@ -481,10 +485,7 @@ VariableDeclarator:
 	;
 
 VariableDeclaratorId:
-	IDENTIFIER LRBrackList {
-		$$ = new VariableDeclaratorIdNode($2, *$1);
-	}
-	| IDENTIFIER {
+	IDENTIFIER {
 		$$ = new VariableDeclaratorIdNode(0, *$1);
 	}
 	;

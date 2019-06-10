@@ -172,10 +172,10 @@ void TypeTypeNode::printType() {
 void TypeTypeNode::Visit() {
     this->printType();
     for (auto node : *this->typeInfo)
-        node->visit();
+        node->Visit();
 }
 
-FormalParamNode::FormalParamNode(TypeTYpeNode *type, VariableDeclaratorIDNode node) {
+FormalParamNode::FormalParamNode(TypeTypeNode *type, VariableDeclaratorIDNode *node) {
     this->paramType = type;
     this->declNode = node;
 }
@@ -234,7 +234,7 @@ ExprNode::ExprNode(ExprType type, PrimaryNode *node) {
     this->primary = node;
     this->ids = NULL;
     this->methodCallParams = NULL;
-    this->subExp1 = this->subExpr2 = NULL;
+    this->subExpr1 = this->subExpr2 = NULL;
 }
 
 ExprNode::ExprNode(ExprType type) {
@@ -242,7 +242,7 @@ ExprNode::ExprNode(ExprType type) {
     this->primary = NULL;
     this->ids = NULL;
     this->methodCallParams = NULL;
-    this->subExp1 = this->subExpr2 = NULL;
+    this->subExpr1 = this->subExpr2 = NULL;
 }
 
 ExprNode::ExprNode(ExprType type, ExprNode *node) {
@@ -313,12 +313,12 @@ LiteralNode::LiteralNode(LiteralType type, int64_t val) {
     this->intVal = val;
 }
 
-LiteralNode::LiteralNode(LiteralNode type, double val) {
+LiteralNode::LiteralNode(LiteralType type, double val) {
     this->type = type;
     this->floatVal = val;
 }
 
-LiteralNode::LiteralNode(LiteralNode type, const string& val) {
+LiteralNode::LiteralNode(LiteralType type, const string& val) {
     this->type = type;
     this->stringVal = val;
 }

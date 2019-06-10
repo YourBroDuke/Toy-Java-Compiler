@@ -179,7 +179,7 @@ class TypeTypeNode : public Node
 {
 public:
     PrimitiveTypeOrNot type;
-    vector<IdentifierNode> *typeInfo;
+    vector<IdentifierNode*> *typeInfo;
 
     void Visit();
     TypeTypeNode(PrimitiveTypeOrNot type);
@@ -195,7 +195,7 @@ public:
     VariableDeclaratorIDNode *declNode;
 
     void Visit();
-    FormalParamNode(TypeTypeNode *type, VariableDeclaratorIDNode declNode);
+    FormalParamNode(TypeTypeNode *type, VariableDeclaratorIDNode *declNode);
     ~FormalParamNode();
 };
 
@@ -213,7 +213,7 @@ public:
 class BlockNode : public Node
 {
 public:
-    vector<BlockStatementNode*> stats;
+    vector<BlockStatementNode*> *stats;
 
     void Visit();
     BlockNode();
@@ -248,7 +248,7 @@ class ExprNode : public Node
 public:
     ExprType type;
     PrimaryNode *primary;
-    vector<IdentifierNode*> ids;
+    vector<IdentifierNode*> *ids;
     MethodCallParamsNode *methodCallParams;
     ExprNode *subExpr1, *subExpr2;
 
@@ -263,7 +263,7 @@ public:
 class MethodCallParamsNode : public Node
 {
 public:
-    vector<ExprNode*> exprs;
+    vector<ExprNode*> *exprs;
 
     void Visit();
     MethodCallParamsNode();
