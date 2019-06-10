@@ -38,8 +38,10 @@ void debugInfo(string *s){
 	vector<MemberDeclNode*> *memberDecls;
 	vector<ModifierType> *memberModifiers;
 	ModifierType memberModifierType;
-	vector<IdentifierNode*> ids;
-
+	vector<IdentifierNode*> *ids;
+	vector<FormalParamNode*> *formalParamNodes;
+	vector<BlockStatementNode*> *blockStatementNodes;
+	vector<ExprNode*> *exprNodes;
 }
 
 /* Define our terminal symbols (tokens). This should
@@ -63,13 +65,19 @@ void debugInfo(string *s){
 %token <token> URSHIFT URSHIFT_ASSIGN NULL_LITERAL TRUE_LITERAL FALSE_LITERAL
 %token <token> SINGLES ASSIGNS
 
-%type <node> CompilationUnit PackageDecl  TypeDecl
-%type <node> ClassDecl ClassBodyDecl QualifiedName ClassBody 
+%type <node> CompilationUnit PackageDecl  TypeDecl MemberDecl TypeType MethodBody
+%type <node> ClassDecl ClassBodyDecl QualifiedName ClassBody  MethodDecl Literal
+%type <node> VariableDeclaratorId Blcok BlockStatement Statement Expression Primary
+%type <token> LRBrackList LRBrackListOptional
 %type <importNodes> ImportDeclListOptional
 %type <typeDeclNodes> TypeDeclListOptional
-%type <memberModifiers> MemberModifierListOptional
-%type <memberModifierType> MemberModifier
+%type <memberModifiers> MemberModifierListOptional ClassOrInterfaceModifierListOptional
+%type <memberModifierType> MemberModifier ClassOrInterfaceModifier
 %type <memberDecls> ClassBodyDeclList
+%type <formalParamNodes> FormalParams FormalParameterWithCommaList
+%type <blockStatementNodes> BlockStatementList
+%type <ids> IdentifierListWithDot
+%type <exprNodes> ExpressionList
 
 %left ASSIGNS
 %left OR
@@ -118,13 +126,13 @@ PackageDecl:
 	;
 
 ImportDeclListOptional:
-	ImportDeclListOptional ImportDecl {  }
+	ImportDeclListOptional ImportDecl { $1->push_back(dynamic_cast<ImportNode*>($2)); $$ = $1; }
 	| { $$ = new vector<ImportNode*>; }
 	;
 
 ImportDecl:
-	SingleImportDecl
-	| TypeImportDecl
+	SingleImportDecl { $$ = new ImportNode(); }
+	| TypeImportDecl { $$ = new ImportNode(); }
 	;
 
 SingleImportDecl:
@@ -157,10 +165,10 @@ TypeDecl:
 
 ClassDecl:
 	CLASS IDENTIFIER ClassBody { 
-		$$ = new ClassDeclNode(*$2, $3);
+		$$ = new ClassDeclNode(*$2, dynamic_cast<ClassBodyNode*>($3));
 	}
 	| CLASS IDENTIFIER IMPLEMENTS TypeList ClassBody {
-		$$ = new ClassDeclNode(*$2, $5);
+		$$ = new ClassDeclNode(*$2, dynamic_cast<ClassBodyNode*>($5));
 	}
 	;
 
@@ -183,10 +191,10 @@ ClassBody:
 ClassBodyDeclList:
 	MemberDecl {
 		$$ = new vector<MemberDeclNode*>;
-		$$->push_back($1);
+		$$->push_back(dynamic_cast<MemberDecl*>($1));
 	}
 	| ClassBodyDeclList MemberDecl {
-		$1->push_back($2);
+		$1->push_back(dynamic_cast<MemberDecl*>($2));
 		$$ = $1;
 	}
 	;
@@ -207,17 +215,23 @@ ForInitOptional:
  /* Expressions */
 
 MethodCallWithoutName:
-	LPAREN ExpressionList RPAREN { $$ = new MethodCallParamsNode(); $$->exprs = $2; }
+	LPAREN ExpressionList RPAREN {
+		$$ = new MethodCallParamsNode();
+		dynamic_cast<MethodCallParamsNode*>($$)->exprs = $2;
+	}
 	| LPAREN RPAREN
 	;
 
 Expression:
-	Primary { $$ = new ExprNode(PRIMARY_TYPE, $1); }
+	Primary {
+		$$ = new ExprNode(PRIMARY_TYPE, dynamic_cast<PrimaryNode*>($1));
+	}
 	| IdentifierListWithDot { }
 	| IdentifierListWithDot MethodCallWithoutName {
-		$$ = new ExprNode(IDEN_DOT_METHOD);
-		$$->ids = $1;
-		$$->methodCallParams = $2;
+		ExprNode *tmp = new ExprNode(IDEN_DOT_METHOD);
+		tmp->ids = $1;
+		tmp->methodCallParams = $2;
+		$$ = tmp;
 	}
 	| IDENTIFIER LBRACK Expression RBRACK
 	| IdentifierListWithDot LBRACK Expression RBRACK
@@ -275,10 +289,10 @@ ParExpression:
 ExpressionList:
 	Expression {
 		$$ = new vector<ExprNode*>;
-		$$->push_back($1);
+		$$->push_back(dynamic_cast<ExprNode*>($1));
 	}
 	| ExpressionList COMMA Expression {
-		$1->push_back($3);
+		$1->push_back(dynamic_cast<ExprNode*>($3));
 		$$ = $1;
 	}
 	;
@@ -378,10 +392,10 @@ FormalParams:
 FormalParameterWithCommaList:
 	FormalParam {
 		$$ = new vector<FormalParamNode*>;
-		$$->push_back($1);
+		$$->push_back(dynamic_cast<FormalParamNode*>($1));
 	}
 	| FormalParameterWithCommaList COMMA FormalParam {
-		$1->push_back($3);
+		$1->push_back(dynamic_cast<FormalParamNode*>($3));
 		$$ = $1;
 	}
 	;
@@ -389,7 +403,7 @@ FormalParameterWithCommaList:
 
 FormalParam:
 	TypeType VariableDeclaratorId {
-		$$ = new FormalParamNode($1, $2);
+		$$ = new FormalParamNode(dynamic_cast<TypeTypeNode*>($1), dynamic_cast<VariableDeclaratorIdNode>($2));
 	}
 	;
 
@@ -508,10 +522,10 @@ Block:
 BlockStatementList:
 	BlockStatement {
 		$$ = new vector<BlockStatementNode*>;
-		$$->push_back($1);
+		$$->push_back(dynamic_cast<BlockStatement*>($1));
 	}
 	| BlockStatementList BlockStatement {
-		$1->push_back($2);
+		$1->push_back(dynamic_cast<BlockStatement*>($2));
 		$$ = $1;
 	}
 	;
@@ -521,7 +535,7 @@ BlockStatement:
 		$$ = NULL;
 	}
 	| Statement {
-		$$ = new BlockStatementNode($1);
+		$$ = new BlockStatementNode(dynamic_cast<StatementNode*>($1));
 	}
 	;
 
@@ -563,7 +577,7 @@ MethodDecl:
 	| VOID IDENTIFIER FormalParams THROWS QualifiedNameList MethodBody { }
 	| TypeType IDENTIFIER FormalParams MethodBody { debugInfo("Reduced MethodDecl"); }
 	| VOID IDENTIFIER FormalParams MethodBody {
-		$$ = new MethodDeclNode(new TypeTypeNode(VOID_TYPE), *$2, $4);
+		$$ = new MethodDeclNode(new TypeTypeNode(VOID_TYPE), *$2, dynamic_cast<BlockNode*>($4));
 		$$->params = $3;
 	}
 	;
@@ -622,8 +636,8 @@ LRBrackListOptional:
 	;
 
 LRBrackList:
-	LBRACK RBRACK
-	| LRBrackList LBRACK RBRACK
+	LBRACK RBRACK { $$ = 1; }
+	| LRBrackList LBRACK RBRACK { $$ = $2 + 1; }
 	;
 
  /* End simple non terminals */
