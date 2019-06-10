@@ -186,6 +186,10 @@ public:
     ~TypeTypeNode();
 private:
     void printType();
+
+public:
+    void codeGen(JContext *context);
+    string typeStr;
 };
 
 class FormalParamNode : public Node 
@@ -197,6 +201,10 @@ public:
     void Visit();
     FormalParamNode(TypeTypeNode *type, VariableDeclaratorIDNode *declNode);
     ~FormalParamNode();
+
+public:
+    void codeGen(JContext *context);
+    string *paramStr;
 };
 
 class VariableDeclaratorIDNode : public Node
@@ -218,6 +226,10 @@ public:
     void Visit();
     BlockNode();
     ~BlockNode();
+
+public:
+    vector<JStmt*> *Jstmts;
+    void codeGen(JContext *context);
 };
 
 class BlockStatementNode : public Node

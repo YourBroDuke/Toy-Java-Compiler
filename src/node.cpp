@@ -144,6 +144,8 @@ void MethodDeclNode::Visit() {
 
 void MethodDeclNode::codeGen(JContext *context){
     auto parNode = dynamic_cast<MemberDeclNode*>(context->nodeStack.top());
+    context->nodeStack.pop();
+    // pop
     this->method = new JMethod;
     this->method->accessSpec = new string();
     for (auto modifier : *parNode->modifiers){
@@ -153,11 +155,16 @@ void MethodDeclNode::codeGen(JContext *context){
 
     for (auto p : *this->params){
         p->codeGen(context);
+        this->method->descriptor->params->push_back(*p->paramStr);
     }
 
     this->typeInfo->codeGen(context);
-    
-        
+    this->method->descriptor->ret = this->typeInfo->typeStr;
+
+    context->nodeStack.push(this->methodBody);
+    //push block
+    this->methodBody->codeGen(context);
+    this->method->JStmts = this->methodBody->Jstmts;
 }
 
 TypeTypeNode::TypeTypeNode(PrimitiveTypeOrNot type) {
