@@ -71,14 +71,14 @@ struct JDescriptor{
     string ret;
 
     string toString();
-}
+};
 
 class JMethod{
     public:
         string *accessSpec;
         string *methodName;
-        string *descriptor;
-        vector<JStmt> *JStmts;
+        JDescriptor *descriptor;
+        vector<JStmt*> *JStmts;
     public:
         JMethod();
         ~JMethod();
