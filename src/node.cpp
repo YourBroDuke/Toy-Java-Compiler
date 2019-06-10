@@ -164,6 +164,7 @@ void MethodDeclNode::codeGen(JContext *context){
     context->nodeStack.push(this->methodBody);
     //push block
     this->methodBody->codeGen(context);
+    // copy TODO: pointer copy
     this->method->JStmts = this->methodBody->Jstmts;
 }
 
@@ -176,13 +177,28 @@ void TypeTypeNode::printType() {
         cout << "This is a void method" << endl;
 }
 
+void TypeTypeNode::codeGen(JContext* context){
+    // MARK: should the ID be preserved?
+    if (this->type == NONPR_TYPE){
+        this->typeStr = "L";
+        for (auto id : *this->typeInfo){
+            this->typeStr += id->name;
+            if (id != *(this->typeInfo->end()-1)){
+                this->typeStr += '/';
+            }
+        }
+    }else{
+        this->typeStr = PrimitiveTypeOrNotMap.at(this->type);
+    }
+}
+
 void TypeTypeNode::Visit() {
     this->printType();
     for (auto node : *this->typeInfo)
-        node->visit();
+        node->Visit();
 }
 
-FormalParamNode::FormalParamNode(TypeTYpeNode *type, VariableDeclaratorIDNode node) {
+FormalParamNode::FormalParamNode(TypeTypeNode *type, VariableDeclaratorIDNode* node) {
     this->paramType = type;
     this->declNode = node;
 }
@@ -190,6 +206,11 @@ FormalParamNode::FormalParamNode(TypeTYpeNode *type, VariableDeclaratorIDNode no
 void FormalParamNode::Visit() {
     this->paramType->Visit();
     this->declNode->Visit();
+}
+
+void FormalParamNode::codeGen(JContext *context){
+    this->paramType->codeGen(context);
+    this->paramStr = new string(this->paramType->typeStr);
 }
 
 VariableDeclaratorIDNode::VariableDeclaratorIDNode(int dim, const string& name) {
@@ -212,6 +233,16 @@ void BlockNode::Visit() {
     }
 }
 
+void BlockNode::codeGen(JContext* context){
+    context->nodeStack.push(this);
+    for (auto stmt: *this->stats){
+        stmt->codeGen(context);
+        // TODO: pointer copy
+        this->Jstmts->push_back(stmt->stmt);
+    }
+    context->nodeStack.pop();
+}
+
 BlockStatementNode::BlockStatementNode(StatementNode *stat) {
     this->stat = stat;
 }
@@ -220,7 +251,12 @@ void BlockStatementNode::Visit() {
     this->stat->Visit();
 }
 
-StatementNode::StatementNode(StatementType type, Node *stat) {
+void BlockStatementNode::codeGen(JContext *context){
+    this->stat->codeGen(context);
+    this->stmt = this->stat->stmt;
+}
+
+StatementNode::StatementNode(StatementType type, Statement *stat) {
     this->type = type;
     this->stat = stat;
 }
@@ -236,12 +272,21 @@ void StatementNode::Visit() {
     this->stat->Visit();
 }
 
+void StatementNode::codeGen(JContext *context){
+    // TODO: translate all type
+    context->nodeStack.push(this);
+    //delegate to child node
+    this->stat->codeGen(context);
+    this->stmt = this->stat->stmt;
+    context->nodeStack.pop();
+}
+
 ExprNode::ExprNode(ExprType type, PrimaryNode *node) {
     this->type = type;
     this->primary = node;
     this->ids = NULL;
     this->methodCallParams = NULL;
-    this->subExp1 = this->subExpr2 = NULL;
+    this->subExpr1 = this->subExpr2 = NULL;
 }
 
 ExprNode::ExprNode(ExprType type) {
@@ -249,7 +294,7 @@ ExprNode::ExprNode(ExprType type) {
     this->primary = NULL;
     this->ids = NULL;
     this->methodCallParams = NULL;
-    this->subExp1 = this->subExpr2 = NULL;
+    this->subExpr1 = this->subExpr2 = NULL;
 }
 
 ExprNode::ExprNode(ExprType type, ExprNode *node) {
@@ -278,6 +323,13 @@ void ExprNode::Visit() {
     }
     if (this->methodCallParams != NULL)
         this->methodCallParams->Visit();
+}
+
+void ExprNode::codeGen(JContext *context){
+    // TODO: translate all expr type
+    if (this->type == IDEN_METHOD || this->type == IDEN_DOT_METHOD){
+        
+    }
 }
 
 MethodCallParamsNode::MethodCallParamsNode() {

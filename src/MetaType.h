@@ -44,6 +44,18 @@ enum PrimitiveTypeOrNot {
     NONPR_TYPE
 };
 
+const unordered_map<PrimitiveTypeOrNot, string> PrimitiveTypeOrNotMap = {
+    {BOOLEAN_TYPE, "Z"},
+    {CHAR_TYPE, "C"},
+    {BYTE_TYPE, "B"},
+    {SHORT_TYPE, "S"},
+    {INT_TYPE, "I"},
+    {LONG_TYPE, "J"},
+    {FLOAT_TYPE, "F"},
+    {DOUBLE_TYPE, "D"},
+    {VOID_TYPE, "V"},
+};
+
 enum StatementType {
     BLOCK_TYPE,
     IF_ELSE_TYPE,

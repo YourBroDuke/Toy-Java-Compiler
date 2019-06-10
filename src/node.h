@@ -179,7 +179,7 @@ class TypeTypeNode : public Node
 {
 public:
     PrimitiveTypeOrNot type;
-    vector<IdentifierNode> *typeInfo;
+    vector<IdentifierNode*> *typeInfo;
 
     void Visit();
     TypeTypeNode(PrimitiveTypeOrNot type);
@@ -199,7 +199,7 @@ public:
     VariableDeclaratorIDNode *declNode;
 
     void Visit();
-    FormalParamNode(TypeTypeNode *type, VariableDeclaratorIDNode declNode);
+    FormalParamNode(TypeTypeNode *type, VariableDeclaratorIDNode* declNode);
     ~FormalParamNode();
 
 public:
@@ -221,7 +221,7 @@ public:
 class BlockNode : public Node
 {
 public:
-    vector<BlockStatementNode*> stats;
+    vector<BlockStatementNode*> *stats;
 
     void Visit();
     BlockNode();
@@ -240,27 +240,39 @@ public:
     void Visit();
     BlockStatementNode(StatementNode *stat);
     ~BlockStatementNode();
+
+public:
+    JStmt *stmt;
+    void codeGen(JContext* context);
 };
 
-class StatementNode : public Node
+class Statement: public Node{
+    public:
+        JStmt *stmt;
+};
+
+class StatementNode :public Statement
 {
 public:
     StatementType type;
-    Node *stat;
+    Statement *stat;
 
     void Visit();
-    StatementNode(StatementType type, Node *stat);
+    StatementNode(StatementType type, Statement *stat);
     ~StatementNode();
 private:
     void printType();
+
+public:
+    void codeGen(JContext *context);
 };
 
-class ExprNode : public Node
+class ExprNode : public Statement
 {
 public:
     ExprType type;
     PrimaryNode *primary;
-    vector<IdentifierNode*> ids;
+    vector<IdentifierNode*> *ids;
     MethodCallParamsNode *methodCallParams;
     ExprNode *subExpr1, *subExpr2;
 
@@ -270,6 +282,9 @@ public:
     ExprNode(ExprType type, ExprNode *node);
     ExprNode(ExprType type, ExprNode *node1, ExprNode *node2);
     ~ExprNode();
+
+public:
+    void codeGen(JContext *context);
 };
 
 class MethodCallParamsNode : public Node
