@@ -1,4 +1,5 @@
 #include "node.h"
+#include "MetaType.h"
 #include <iostream>
 using namespace std;
 FileNode::FileNode(){
@@ -18,8 +19,6 @@ void FileNode::Visit(){
         node->Visit();
     }
 }
-
-PackageNode::PackageNode() 
 
 PackageNode::PackageNode(QualifiedNameNode *node) {
     this->qNode = node;
@@ -51,13 +50,27 @@ TypeDeclNode::TypeDeclNode(ClassOrInterface t, ClassDeclNode *node) {
 }
 
 void TypeDeclNode::Visit() {
-    if (this->type == Class){
+    if (this->type == CLASS_TYPE){
         cout << "class" << endl;
     }else{
         cout << "interface" << endl;
     }
 
     this->classDecl->Visit();
+}
+
+void TypeDeclNode::codeGen(JContext* context){
+    context->nodeStack.push(this);
+    this->classSpec = new JClassSpec;
+    this->classSpec->accessSpec = "";
+    for (auto modifer: *this->modifiers){
+        this->classSpec->accessSpec += ModifierMap.at(modifer) + " ";
+    }
+    this->classSpec->className = this->classDecl->className->name;
+    context->classFile->jasminHeader->classSpec = this->classSpec;
+    context->nodeStack.pop();
+
+    this->classDecl->codeGen(context);
 }
 
 ClassDeclNode::ClassDeclNode(const string& name, ClassBodyNode *classBody) {
@@ -82,7 +95,12 @@ void QualifiedNameNode::Visit() {
 
 
 ClassBodyNode::ClassBodyNode() {
+}
 
+void ClassBodyNode::codeGen(JContext *context){
+    for (auto node : *this->memberDecls){
+        node->codeGen(context);
+    }
 }
 
 void ClassBodyNode::Visit() {
@@ -94,6 +112,11 @@ MemberDeclNode::MemberDeclNode(Node *decl) {
     this->mainDecl = decl;
 }
 
+void MemberDeclNode::codeGen(JContext *context){
+    context->nodeStack.push(this);
+    this->mainDecl->codeGen(context);
+}
+
 void MemberDeclNode::printType(ModifierType type) {
     if (type == PUBLIC_TYPE) cout << "it has public attribute" << endl;
     if (type == STATIC_TYPE) cout << "it has static attribute" << endl;
@@ -101,7 +124,7 @@ void MemberDeclNode::printType(ModifierType type) {
 
 void MemberDeclNode::Visit() {
     this->mainDecl->Visit();
-    for (auto crt : this->modifiers)
+    for (auto crt : *this->modifiers)
         this->printType(crt);
 }
 
@@ -117,6 +140,24 @@ void MethodDeclNode::Visit() {
     for (auto node : *this->params)
         node->Visit();
     this->methodBody->Visit();
+}
+
+void MethodDeclNode::codeGen(JContext *context){
+    auto parNode = dynamic_cast<MemberDeclNode*>(context->nodeStack.top());
+    this->method = new JMethod;
+    this->method->accessSpec = new string();
+    for (auto modifier : *parNode->modifiers){
+        *this->method->accessSpec += ModifierMap.at(modifier) + " ";
+    }
+    this->method->methodName = new string(this->nodeName->name);
+
+    for (auto p : *this->params){
+        p->codeGen(context);
+    }
+
+    this->typeInfo->codeGen(context);
+    
+        
 }
 
 TypeTypeNode::TypeTypeNode(PrimitiveTypeOrNot type) {
@@ -241,7 +282,7 @@ void MethodCallParamsNode::Visit() {
         node->Visit();
 }
 
-PrimaryNode::PaimaryNode(PrimaryNodeType type, ExprNode *node) {
+PrimaryNode::PrimaryNode(PrimaryNodeType type, ExprNode *node) {
     this->type = type;
     this->expr = node;
     this->literal = NULL;

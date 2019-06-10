@@ -5,12 +5,15 @@
 #include <string>
 
 #include "MetaType.h"
+#include "codeGen/Jasmin.hpp"
+#include "codeGen/context.hpp"
 using namespace std;
 
 class Node
 {
 public:
     virtual void Visit() = 0;
+    void codeGen(JContext *context);
 };
 
 class PackageNode;
@@ -42,6 +45,7 @@ public:
     void Visit();
 };
 
+// omit
 class PackageNode : public Node
 {
 public:
@@ -49,17 +53,24 @@ public:
     PackageNode(QualifiedNameNode *node);
     ~PackageNode();
     void Visit();
+
+    // do nothing
+    void codeGen(JContext *context);
 };
 
-
+//omit
 class ImportNode : public Node
 {
 public:
     void Visit();
     ImportNode();
     ~ImportNode();
+
+    // do nothing
+    void codeGen(JContext *context);
 };
 
+// class specification
 class TypeDeclNode : public Node
 {
 public:
@@ -70,6 +81,10 @@ public:
     void Visit();
     TypeDeclNode(ClassOrInterface t, ClassDeclNode *node);
     ~TypeDeclNode();
+
+public:
+    void codeGen(JContext *context);
+    JClassSpec *classSpec;
 };
 
 class QualifiedNameNode : public Node
@@ -93,7 +108,7 @@ public:
 };
 
 /* START */
-
+// class declaration block {}
 class ClassDeclNode : public Node
 {
 public:
@@ -103,15 +118,24 @@ public:
     void Visit();
     ClassDeclNode(const string& className, ClassBodyNode *body);
     ~ClassDeclNode();
+
+public:
+    void codeGen(JContext* context);
+
 };
 
+// declarations
 class ClassBodyNode
 {
 public:
-    vector<MemberDeclNode*> memberDecls;
+    vector<MemberDeclNode*> *memberDecls;
     void Visit();
-    ClassBodyDeclNode();
-    ~ClassBodyDeclNode();
+    ClassBodyNode();
+    ~ClassBodyNode();
+
+public:
+    // do nothing
+    void codeGen(JContext* context);
 };
 
 class MemberDeclNode : public Node
@@ -122,19 +146,33 @@ public:
     void Visit();
     MemberDeclNode(Node *decl);
     ~MemberDeclNode();
+private:
+    void printType(ModifierType type);
+
+public:
+    // delegate to child node
+    void codeGen(JContext *context);
 };
 
+// method -> JMethod
 class MethodDeclNode : public Node
 {
 public:
     TypeTypeNode *typeInfo;
     IdentifierNode *nodeName;
-    vector<FormalParamNode*> params;
+    vector<FormalParamNode*> *params;
     BlockNode *methodBody;
 
     void Visit();
     MethodDeclNode(TypeTypeNode *type, const string& name, BlockNode *block);
     ~MethodDeclNode();
+
+private:
+    void printType(ModifierType type);
+
+public:
+    void codeGen(JContext *context);
+    JMethod *method;
 };
 
 class TypeTypeNode : public Node
@@ -182,7 +220,7 @@ public:
     ~BlockNode();
 };
 
-class BlockStatementNode : public 
+class BlockStatementNode : public Node
 {
 public:
     StatementNode *stat;
@@ -190,7 +228,7 @@ public:
     void Visit();
     BlockStatementNode(StatementNode *stat);
     ~BlockStatementNode();
-}
+};
 
 class StatementNode : public Node
 {
@@ -260,5 +298,6 @@ public:
     LiteralNode(LiteralType type, double val);
     LiteralNode(LiteralType type, const string& val);
     ~LiteralNode();
-}
+};
+
 #endif
