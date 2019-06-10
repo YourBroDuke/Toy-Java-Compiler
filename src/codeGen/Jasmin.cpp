@@ -25,3 +25,19 @@ string JDescriptor::toString(){
 
     return result + this->ret;
 }
+
+string JasminHeader::toString(){
+
+}
+
+string JMethod::toString(){
+
+}
+
+string JInstructionStmt::toString(){
+
+}
+
+string JasminFile::toString(){
+    
+}

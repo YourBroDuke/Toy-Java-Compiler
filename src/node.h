@@ -232,7 +232,15 @@ public:
     void codeGen(JContext *context);
 };
 
-class BlockStatementNode : public Node
+class Statement: public Node{
+    public:
+        vector<JStmt*> *stmt;
+        Statement(){
+            stmt = new vector<JStmt*>;
+        }
+};
+
+class BlockStatementNode : public Statement
 {
 public:
     StatementNode *stat;
@@ -242,13 +250,7 @@ public:
     ~BlockStatementNode();
 
 public:
-    JStmt *stmt;
     void codeGen(JContext* context);
-};
-
-class Statement: public Node{
-    public:
-        JStmt *stmt;
 };
 
 class StatementNode :public Statement
@@ -290,14 +292,14 @@ public:
 class MethodCallParamsNode : public Node
 {
 public:
-    vector<ExprNode*> exprs;
+    vector<ExprNode*> *exprs;
 
     void Visit();
     MethodCallParamsNode();
     ~MethodCallParamsNode();
 };
 
-class PrimaryNode : public Node
+class PrimaryNode : public Statement
 {
 public:
     PrimaryNodeType type;
@@ -310,9 +312,12 @@ public:
     PrimaryNode(PrimaryNodeType type, LiteralNode *node);
     PrimaryNode(PrimaryNodeType type, const string& id);
     ~PrimaryNode();
+
+public:
+    void codeGen(JContext *context);
 };
 
-class LiteralNode : public Node
+class LiteralNode : public Statement
 {
 public:
     LiteralType type;
@@ -325,6 +330,9 @@ public:
     LiteralNode(LiteralType type, double val);
     LiteralNode(LiteralType type, const string& val);
     ~LiteralNode();
+
+public:
+    void codeGen(JContext *context);
 };
 
 #endif

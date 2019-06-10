@@ -5,19 +5,3 @@ public class hello{
         System.out.println("Hello world!");
     }
 }
-
-
-LocalVariableDecl:
-	VariableModifierList TypeType VariableDeclarators
-	| TypeType VariableDeclarators
-	;
-
-TypeType:
-	IdentifierListWithDot 
-	| IDENTIFIER LRBrackListOptional
-	| PrimitiveType LRBrackListOptional
-	;
-
-    LRBrackListOptional
-
-Expression LBRACK Expression RBRACK

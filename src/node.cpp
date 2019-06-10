@@ -238,7 +238,9 @@ void BlockNode::codeGen(JContext* context){
     for (auto stmt: *this->stats){
         stmt->codeGen(context);
         // TODO: pointer copy
-        this->Jstmts->push_back(stmt->stmt);
+        this->Jstmts->insert(this->Jstmts->end(), 
+            stmt->stmt->begin(),
+            stmt->stmt->end());
     }
     context->nodeStack.pop();
 }
@@ -328,7 +330,36 @@ void ExprNode::Visit() {
 void ExprNode::codeGen(JContext *context){
     // TODO: translate all expr type
     if (this->type == IDEN_METHOD || this->type == IDEN_DOT_METHOD){
-        
+        // push context
+        context->nodeStack.push(this);
+        for (auto params : *methodCallParams->exprs){
+            params->codeGen(context);
+            this->stmt->insert(this->stmt->end(), 
+                params->stmt->begin(),
+                params->stmt->end());
+        }
+        context->nodeStack.pop();
+
+        // TODO: symbol table
+        JInstructionStmt *s = new JInstructionStmt;
+        s->pc = nullptr;
+        s->opcode = new string("invokevirtual");
+        string argStr = "";
+        for (auto id : *ids){
+            argStr += id->name;
+            if (id != *(ids->end()-1)){
+                argStr += '/';
+            }
+        }
+        // TODO: generate descriptor
+        argStr += "(Ljava/lang/String;II)V";
+
+    } else if (this->type == PRIMARY_TYPE){
+        this->primary->codeGen(context);
+        this->stmt->insert(this->stmt->end(),
+            this->primary->stmt->begin(),
+            this->primary->stmt->end()
+            );
     }
 }
 
@@ -367,17 +398,27 @@ void PrimaryNode::Visit() {
         this->literal->Visit();
 }
 
+void PrimaryNode::codeGen(JContext* context){
+    // TODO:
+    if (this->type == PRIMARY_LITERAL){
+        this->literal->codeGen(context);
+        this->stmt->insert(this->stmt->end(),
+            this->literal->stmt->begin(),
+            this->literal->stmt->end());
+    }
+}
+
 LiteralNode::LiteralNode(LiteralType type, int64_t val) {
     this->type = type;
     this->intVal = val;
 }
 
-LiteralNode::LiteralNode(LiteralNode type, double val) {
+LiteralNode::LiteralNode(LiteralType type, double val) {
     this->type = type;
     this->floatVal = val;
 }
 
-LiteralNode::LiteralNode(LiteralNode type, const string& val) {
+LiteralNode::LiteralNode(LiteralType type, const string& val) {
     this->type = type;
     this->stringVal = val;
 }
@@ -385,5 +426,15 @@ LiteralNode::LiteralNode(LiteralNode type, const string& val) {
 void LiteralNode::Visit() {
     if (this->type == STRING_LIT) {
         cout << this->stringVal << endl;
+    }
+}
+
+void LiteralNode::codeGen(JContext *context){
+    // TODO: complete it
+    if (this->type == STRING_LIT){
+        JInstructionStmt *s = new JInstructionStmt;
+        s->opcode = new string("ldc");
+        s->args = new vector<string>;
+        s->args->push_back('\"' + stringVal + "\"");
     }
 }

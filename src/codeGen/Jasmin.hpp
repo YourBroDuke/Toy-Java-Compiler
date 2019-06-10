@@ -41,6 +41,7 @@ class JasminHeader{
     public:
         JasminHeader();
         ~JasminHeader();
+        string toString();
 };
 
 /*
@@ -82,6 +83,7 @@ class JMethod{
     public:
         JMethod();
         ~JMethod();
+        string toString();
 };
 
 /*
@@ -118,7 +120,7 @@ class JStmt{
 };
 
 class JInstructionStmt : public JStmt{
-    private:
+    public:
         // optional
         string *pc;
         string *opcode;
@@ -140,6 +142,7 @@ class JasminFile{
 
         JasminFile();
         ~JasminFile();
+        string toString();
 };
 
 #endif
