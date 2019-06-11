@@ -27,12 +27,13 @@ class MemberDeclNode;
 class TypeTypeNode;
 class FormalParamNode;
 class BlockNode;
-class VariableDeclaratorIDNode;
-class BlockStatement;
+class VariableDeclaratorIdNode;
 class StatementNode;
 class PrimaryNode;
 class MethodCallParamsNode;
 class LiteralNode;
+class ClassBodyNode;
+class BlockStatementNode;
 
 class FileNode : public Node
 {
@@ -125,7 +126,7 @@ public:
 };
 
 // declarations
-class ClassBodyNode
+class ClassBodyNode : public Node
 {
 public:
     vector<MemberDeclNode*> *memberDecls;
@@ -180,6 +181,7 @@ class TypeTypeNode : public Node
 public:
     PrimitiveTypeOrNot type;
     vector<IdentifierNode*> *typeInfo;
+    int arrayDim;
 
     void Visit();
     TypeTypeNode(PrimitiveTypeOrNot type);
@@ -196,10 +198,10 @@ class FormalParamNode : public Node
 {
 public:
     TypeTypeNode *paramType;
-    VariableDeclaratorIDNode *declNode;
+    VariableDeclaratorIdNode *declNode;
 
     void Visit();
-    FormalParamNode(TypeTypeNode *type, VariableDeclaratorIDNode *declNode);
+    FormalParamNode(TypeTypeNode *type, VariableDeclaratorIdNode *declNode);
     ~FormalParamNode();
 
 public:
@@ -207,15 +209,15 @@ public:
     string *paramStr;
 };
 
-class VariableDeclaratorIDNode : public Node
+class VariableDeclaratorIdNode : public Node
 {
 public:
     int arrayDim;
     IdentifierNode *variableName;
 
     void Visit();
-    VariableDeclaratorIDNode(int dim, const string& name);
-    ~VariableDeclaratorIDNode();
+    VariableDeclaratorIdNode(int dim, const string& name);
+    ~VariableDeclaratorIdNode();
 };
 
 class BlockNode : public Node

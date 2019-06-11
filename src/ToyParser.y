@@ -66,9 +66,10 @@ void debugInfo(string *s){
 %token <token> SINGLES ASSIGNS
 
 %type <node> CompilationUnit PackageDecl  TypeDecl MemberDecl TypeType MethodBody
-%type <node> ClassDecl ClassBodyDecl QualifiedName ClassBody  MethodDecl Literal
-%type <node> VariableDeclaratorId Blcok BlockStatement Statement Expression Primary
-%type <token> LRBrackList LRBrackListOptional
+%type <node> ClassDecl QualifiedName ClassBody  MethodDecl Literal ImportDecl
+%type <node> VariableDeclaratorId Block BlockStatement Statement Expression Primary
+%type <node> MethodCallWithoutName FormalParam
+%type <token> LRBrackList
 %type <importNodes> ImportDeclListOptional
 %type <typeDeclNodes> TypeDeclListOptional
 %type <memberModifiers> MemberModifierListOptional ClassOrInterfaceModifierListOptional
@@ -108,6 +109,7 @@ void debugInfo(string *s){
 
 %%
 
+ /* done */
 CompilationUnit:
 	PackageDecl ImportDeclListOptional TypeDeclListOptional {
 		rootNode->packageNode = dynamic_cast<PackageNode*>($1);
@@ -120,11 +122,11 @@ CompilationUnit:
 		rootNode->typeDeclNodes = $2;
 	}
 	;
-
+ /* done */
 PackageDecl:
 	PACKAGE QualifiedName SEMIC { $$ = new PackageNode(dynamic_cast<QualifiedNameNode*>($2)); }
 	;
-
+ /* done */
 ImportDeclListOptional:
 	ImportDeclListOptional ImportDecl { $1->push_back(dynamic_cast<ImportNode*>($2)); $$ = $1; }
 	| { $$ = new vector<ImportNode*>; }
@@ -145,7 +147,7 @@ TypeImportDecl:
 	| IMPORT STATIC QualifiedName DOT MUL SEMIC
 	;
 
- /*  TypeDecl */
+ /* done */
 TypeDeclListOptional:
 	TypeDeclListOptional TypeDecl {
 		$1->push_back(dynamic_cast<TypeDeclNode*>($2));
@@ -154,15 +156,17 @@ TypeDeclListOptional:
 	| {$$ = new vector<TypeDeclNode*>;}
 	;
 
+ /* almost done */
 TypeDecl:
 	ClassOrInterfaceModifierListOptional ClassDecl {
-		$$ = new TypeDeclNode(CLASS, dynamic_cast<ClassDeclNode*>($2));
-		$$->modifiers = $1;
+		$$ = new TypeDeclNode(CLASS_TYPE, dynamic_cast<ClassDeclNode*>($2));
+		dynamic_cast<TypeDeclNode*>($$)->modifiers = $1;
 	}
 	| ClassOrInterfaceModifierListOptional InterfaceDecl { debugInfo("This is an Interface declaration"); }
 	| SEMIC {$$ = NULL;}
 	;
 
+ /* done */
 ClassDecl:
 	CLASS IDENTIFIER ClassBody { 
 		$$ = new ClassDeclNode(*$2, dynamic_cast<ClassBodyNode*>($3));
@@ -176,25 +180,26 @@ InterfaceDecl:
 	INTERFACE IDENTIFIER InterfaceBody
 	;
 
- /* ClassBody */
+ /* done */
 ClassBody:
 	LBRACE RBRACE {
 		$$ = new ClassBodyNode();
-		$$->memberDecls = new vector<MemberDeclNode*>;
+		dynamic_cast<ClassBodyNode*>($$)->memberDecls = new vector<MemberDeclNode*>;
 	}
 	| LBRACE ClassBodyDeclList RBRACE {
 		$$ = new ClassBodyNode();
-		$$->memberDecls = $2;
+		dynamic_cast<ClassBodyNode*>($$)->memberDecls = $2;
 	}
 	;
 
+ /* done */
 ClassBodyDeclList:
 	MemberDecl {
 		$$ = new vector<MemberDeclNode*>;
-		$$->push_back(dynamic_cast<MemberDecl*>($1));
+		$$->push_back(dynamic_cast<MemberDeclNode*>($1));
 	}
 	| ClassBodyDeclList MemberDecl {
-		$1->push_back(dynamic_cast<MemberDecl*>($2));
+		$1->push_back(dynamic_cast<MemberDeclNode*>($2));
 		$$ = $1;
 	}
 	;
@@ -219,7 +224,10 @@ MethodCallWithoutName:
 		$$ = new MethodCallParamsNode();
 		dynamic_cast<MethodCallParamsNode*>($$)->exprs = $2;
 	}
-	| LPAREN RPAREN
+	| LPAREN RPAREN {
+		$$ = new MethodCallParamsNode();
+		dynamic_cast<MethodCallParamsNode*>($$)->exprs = new vector<ExprNode*>;
+	}
 	;
 
 Expression:
@@ -230,21 +238,25 @@ Expression:
 	| IdentifierListWithDot MethodCallWithoutName {
 		ExprNode *tmp = new ExprNode(IDEN_DOT_METHOD);
 		tmp->ids = $1;
-		tmp->methodCallParams = $2;
+		tmp->methodCallParams = dynamic_cast<MethodCallParamsNode*>($2);
 		$$ = tmp;
 	}
-	| IDENTIFIER LBRACK Expression RBRACK
-	| IdentifierListWithDot LBRACK Expression RBRACK
-	| IDENTIFIER MethodCallWithoutName
-	| Expression INCRE %prec INCRE { debugInfo("self increment"); }
-	| Expression DECRE %prec INCRE { debugInfo("self decrement"); }
+	| IDENTIFIER LBRACK Expression RBRACK { }
+	| IdentifierListWithDot LBRACK Expression RBRACK { }
+	| IDENTIFIER MethodCallWithoutName { }
+	| Expression INCRE %prec INCRE {
+		$$ = new ExprNode(POST_INCRE, dynamic_cast<ExprNode*>($1));
+	}
+	| Expression DECRE %prec INCRE
 	| ADD Expression %prec SINGLES
 	| SUB Expression %prec SINGLES
 	| INCRE Expression %prec SINGLES
 	| DECRE Expression %prec SINGLES
 	| TILDE Expression %prec SINGLES
 	| BANG Expression %prec SINGLES
-	| Expression MUL Expression
+	| Expression MUL Expression {
+		$$ = new ExprNode(OP_MUL, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
 	| Expression DIV Expression
 	| Expression MOD Expression
 	| Expression ADD Expression { debugInfo("add up"); }
@@ -301,7 +313,7 @@ Primary:
 	LPAREN Expression RPAREN {  }
 	| THIS {  }
 	| SUPER {  }
-	| Literal { $$ = new PrimaryNode(PRIMARY_LITERAL, $1); }
+	| Literal { $$ = new PrimaryNode(PRIMARY_LITERAL, dynamic_cast<LiteralNode*>$1); }
 	| IDENTIFIER { debugInfo($1); }
 	;
 
@@ -350,8 +362,10 @@ InterfaceMemberDecl:
 
 
 InterfaceMethodDecl:
-	InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams LRBrackListOptional THROWS QualifiedNameList MethodBody
-	| InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams LRBrackListOptional MethodBody
+	InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams LRBrackList THROWS QualifiedNameList MethodBody
+	| InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams LRBrackList MethodBody
+	| InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams THROWS QualifiedNameList MethodBody
+	| InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams MethodBody
 	;
 
 InterfaceMethodModifierListOptional:
@@ -369,8 +383,8 @@ MemberModifier:
 	| PROTECTED { $$ = PROTECTED_TYPE; }
 	| PRIVATE { $$ = PRIVATE_TYPE; }
 	| ABSTRACT { $$ = ABSTRACT_TYPE; }
-	| DEFAULT { $$ = DEFAULT_VAL; }
-	| STATIC { $$ = DEFAULT_VAL; }
+	| DEFAULT { $$ = DEFAULT_TYPE; }
+	| STATIC { $$ = DEFAULT_TYPE; }
 	| STRICTFP { $$ = STRICTFP_TYPE; }
 	;
 
@@ -403,7 +417,7 @@ FormalParameterWithCommaList:
 
 FormalParam:
 	TypeType VariableDeclaratorId {
-		$$ = new FormalParamNode(dynamic_cast<TypeTypeNode*>($1), dynamic_cast<VariableDeclaratorIdNode>($2));
+		$$ = new FormalParamNode(dynamic_cast<TypeTypeNode*>($1), dynamic_cast<VariableDeclaratorIdNode*>($2));
 	}
 	;
 
@@ -446,12 +460,16 @@ IdentifierListWithDot:
 TypeType:
 	IdentifierListWithDot { }
 	| IDENTIFIER {
-		$$ = new TypeTypeNode(NONPR_TYPE);
-		$$->typeInfo = new vector<IdentifierNode*>;
-		$$->typeInfo->push_back(new IdentifierNode(*$1));
+		TypeTypeNode* tmp = new TypeTypeNode(NONPR_TYPE);
+		tmp->typeInfo = new vector<IdentifierNode*>;
+		tmp->typeInfo->push_back(new IdentifierNode(*$1));
+		$$ = tmp;
 	}
 	| IDENTIFIER LRBrackList {
-
+		TypeTypeNode* tmp = new TypeTypeNode(NONPR_TYPE);
+		tmp->typeInfo = new vector<IdentifierNode*>;
+		tmp->typeInfo->push_back(new IdentifierNode(*$1));
+		tmp->arrayDim = $2;
 	}
 	| PrimitiveType { }
 	| PrimitiveType LRBrackList { }
@@ -512,21 +530,21 @@ ArrayInitializer:
 Block:
 	LBRACE BlockStatementList RBRACE {
 		$$ = new BlockNode();
-		$$->stats = $2;
+		dynamic_cast<BlockNode*>($$)->stats = $2;
 	}
 	| LBRACE RBRACE {
 		$$ = new BlockNode();
-		$$->stats = new vector<BlockStatementNode*>;
+		dynamic_cast<BlockNode*>($$)->stats = new vector<BlockStatementNode*>;
 	}
 	;
 
 BlockStatementList:
 	BlockStatement {
 		$$ = new vector<BlockStatementNode*>;
-		$$->push_back(dynamic_cast<BlockStatement*>($1));
+		$$->push_back(dynamic_cast<BlockStatementNode*>($1));
 	}
 	| BlockStatementList BlockStatement {
-		$1->push_back(dynamic_cast<BlockStatement*>($2));
+		$1->push_back(dynamic_cast<BlockStatementNode*>($2));
 		$$ = $1;
 	}
 	;
@@ -564,7 +582,7 @@ Statement:
 MemberDecl:
 	MemberModifierListOptional MethodDecl {
 		$$ = new MemberDeclNode($2);
-		$$->modifiers = $1;
+		dynamic_cast<MemberDeclNode*>($$)->modifiers = $1;
 	}
 	| MemberModifierListOptional FieldDecl { debugInfo("Reduced from FieldDecl"); }
 	| MemberModifierListOptional ConstructorDecl { }
@@ -579,7 +597,7 @@ MethodDecl:
 	| TypeType IDENTIFIER FormalParams MethodBody { debugInfo("Reduced MethodDecl"); }
 	| VOID IDENTIFIER FormalParams MethodBody {
 		$$ = new MethodDeclNode(new TypeTypeNode(VOID_TYPE), *$2, dynamic_cast<BlockNode*>($4));
-		$$->params = $3;
+		dynamic_cast<MethodDeclNode*>($$)->params = $3;
 	}
 	;
 
@@ -628,12 +646,6 @@ Literal:
 	| TRUE_LITERAL { }
 	| FALSE_LITERAL { }
 	| NULL_LITERAL { }
-	;
-
-
-LRBrackListOptional:
-	LRBrackListOptional LBRACK RBRACK
-	|
 	;
 
 LRBrackList:

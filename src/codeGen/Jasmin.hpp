@@ -19,6 +19,8 @@ using namespace std;
     [.inner interface [<access>] [<name>] [inner <classname>] [outer <name>]]*
 }
  */
+class JStmt;
+
 struct JClassSpec{
     string accessSpec;
     string className;
@@ -112,7 +114,7 @@ class JMethod{
 }
 */
 
-class JStmt{
+class JStmt {
     public:
         virtual string toString();
 };

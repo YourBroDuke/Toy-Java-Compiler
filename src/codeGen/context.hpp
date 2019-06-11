@@ -4,6 +4,8 @@
 #include "../node.h"
 #include <stack>
 using namespace std;
+class Node;
+
 class JContext{
     public:
         Node* root;

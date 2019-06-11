@@ -182,7 +182,7 @@ void TypeTypeNode::Visit() {
         node->Visit();
 }
 
-FormalParamNode::FormalParamNode(TypeTypeNode *type, VariableDeclaratorIDNode *node) {
+FormalParamNode::FormalParamNode(TypeTypeNode *type, VariableDeclaratorIdNode *node) {
     this->paramType = type;
     this->declNode = node;
 }
@@ -192,12 +192,12 @@ void FormalParamNode::Visit() {
     this->declNode->Visit();
 }
 
-VariableDeclaratorIDNode::VariableDeclaratorIDNode(int dim, const string& name) {
+VariableDeclaratorIdNode::VariableDeclaratorIdNode(int dim, const string& name) {
     this->arrayDim = dim;
     this->variableName = new IdentifierNode(name);
 }
 
-void VariableDeclaratorIDNode::Visit() {
+void VariableDeclaratorIdNode::Visit() {
     cout << "it has " << this->arrayDim << "dims" << endl;
     this->variableName->Visit();
 }
