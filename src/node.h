@@ -9,6 +9,8 @@
 #include "codeGen/context.hpp"
 using namespace std;
 
+class JContext;
+
 class Node
 {
 public:
@@ -234,7 +236,15 @@ public:
     void codeGen(JContext *context);
 };
 
-class BlockStatementNode : public Node
+class Statement: public Node{
+    public:
+        vector<JStmt*> *stmt;
+        Statement(){
+            stmt = new vector<JStmt*>;
+        }
+};
+
+class BlockStatementNode : public Statement
 {
 public:
     StatementNode *stat;
@@ -242,22 +252,28 @@ public:
     void Visit();
     BlockStatementNode(StatementNode *stat);
     ~BlockStatementNode();
+
+public:
+    void codeGen(JContext* context);
 };
 
-class StatementNode : public Node
+class StatementNode :public Statement
 {
 public:
     StatementType type;
-    Node *stat;
+    Statement *stat;
 
     void Visit();
-    StatementNode(StatementType type, Node *stat);
+    StatementNode(StatementType type, Statement *stat);
     ~StatementNode();
 private:
     void printType();
+
+public:
+    void codeGen(JContext *context);
 };
 
-class ExprNode : public Node
+class ExprNode : public Statement
 {
 public:
     ExprType type;
@@ -272,6 +288,9 @@ public:
     ExprNode(ExprType type, ExprNode *node);
     ExprNode(ExprType type, ExprNode *node1, ExprNode *node2);
     ~ExprNode();
+
+public:
+    void codeGen(JContext *context);
 };
 
 class MethodCallParamsNode : public Node
@@ -284,7 +303,7 @@ public:
     ~MethodCallParamsNode();
 };
 
-class PrimaryNode : public Node
+class PrimaryNode : public Statement
 {
 public:
     PrimaryNodeType type;
@@ -297,9 +316,12 @@ public:
     PrimaryNode(PrimaryNodeType type, LiteralNode *node);
     PrimaryNode(PrimaryNodeType type, const string& id);
     ~PrimaryNode();
+
+public:
+    void codeGen(JContext *context);
 };
 
-class LiteralNode : public Node
+class LiteralNode : public Statement
 {
 public:
     LiteralType type;
@@ -312,6 +334,9 @@ public:
     LiteralNode(LiteralType type, double val);
     LiteralNode(LiteralType type, const string& val);
     ~LiteralNode();
+
+public:
+    void codeGen(JContext *context);
 };
 
 #endif

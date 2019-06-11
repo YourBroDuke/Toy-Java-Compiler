@@ -2,6 +2,11 @@
 #include "MetaType.h"
 #include <iostream>
 using namespace std;
+
+void Node::codeGen(JContext* context) {
+
+}
+
 FileNode::FileNode(){
 
 }
@@ -83,6 +88,10 @@ void ClassDeclNode::Visit() {
     this->classBody->Visit();
 }
 
+void ClassDeclNode::codeGen(JContext* context) {
+
+}
+
 QualifiedNameNode::QualifiedNameNode() {
     this->identifiers = new vector<IdentifierNode*>;
 }
@@ -123,12 +132,14 @@ void MemberDeclNode::printType(ModifierType type) {
 }
 
 void MemberDeclNode::Visit() {
-    this->mainDecl->Visit();
     for (auto crt : *this->modifiers)
         this->printType(crt);
+    this->mainDecl->Visit();
 }
 
 MethodDeclNode::MethodDeclNode(TypeTypeNode *type, const string& name, BlockNode *block) {
+    cout << endl << endl << endl << endl;
+    cout << "name = " << name << endl;
     this->typeInfo = type;
     this->nodeName = new IdentifierNode(name);
     this->methodBody = block;
@@ -164,11 +175,14 @@ void MethodDeclNode::codeGen(JContext *context){
     context->nodeStack.push(this->methodBody);
     //push block
     this->methodBody->codeGen(context);
+    // copy TODO: pointer copy
     this->method->JStmts = this->methodBody->Jstmts;
 }
 
 TypeTypeNode::TypeTypeNode(PrimitiveTypeOrNot type) {
     this->type = type;
+    this->typeInfo = NULL;
+    this->arrayDim = 0;
 }
 
 void TypeTypeNode::printType() {
@@ -176,8 +190,26 @@ void TypeTypeNode::printType() {
         cout << "This is a void method" << endl;
 }
 
+void TypeTypeNode::codeGen(JContext* context){
+    // MARK: should the ID be preserved?
+    if (this->type == NONPR_TYPE){
+        this->typeStr = "L";
+        for (auto id : *this->typeInfo){
+            this->typeStr += id->name;
+            if (id != *(this->typeInfo->end()-1)){
+                this->typeStr += '/';
+            }
+        }
+    }else{
+        this->typeStr = PrimitiveTypeOrNotMap.at(this->type);
+    }
+}
+
 void TypeTypeNode::Visit() {
     this->printType();
+    cout << "It has " << this->arrayDim << " dimensions" << endl;
+    if (this->typeInfo == NULL) return;
+    
     for (auto node : *this->typeInfo)
         node->Visit();
 }
@@ -192,13 +224,17 @@ void FormalParamNode::Visit() {
     this->declNode->Visit();
 }
 
+void FormalParamNode::codeGen(JContext *context){
+    this->paramType->codeGen(context);
+    this->paramStr = new string(this->paramType->typeStr);
+}
+
 VariableDeclaratorIdNode::VariableDeclaratorIdNode(int dim, const string& name) {
     this->arrayDim = dim;
     this->variableName = new IdentifierNode(name);
 }
 
 void VariableDeclaratorIdNode::Visit() {
-    cout << "it has " << this->arrayDim << "dims" << endl;
     this->variableName->Visit();
 }
 
@@ -212,6 +248,18 @@ void BlockNode::Visit() {
     }
 }
 
+void BlockNode::codeGen(JContext* context){
+    context->nodeStack.push(this);
+    for (auto stmt: *this->stats){
+        stmt->codeGen(context);
+        // TODO: pointer copy
+        this->Jstmts->insert(this->Jstmts->end(), 
+            stmt->stmt->begin(),
+            stmt->stmt->end());
+    }
+    context->nodeStack.pop();
+}
+
 BlockStatementNode::BlockStatementNode(StatementNode *stat) {
     this->stat = stat;
 }
@@ -220,7 +268,12 @@ void BlockStatementNode::Visit() {
     this->stat->Visit();
 }
 
-StatementNode::StatementNode(StatementType type, Node *stat) {
+void BlockStatementNode::codeGen(JContext *context){
+    this->stat->codeGen(context);
+    this->stmt = this->stat->stmt;
+}
+
+StatementNode::StatementNode(StatementType type, Statement *stat) {
     this->type = type;
     this->stat = stat;
 }
@@ -234,6 +287,15 @@ void StatementNode::printType() {
 void StatementNode::Visit() {
     this->printType();
     this->stat->Visit();
+}
+
+void StatementNode::codeGen(JContext *context){
+    // TODO: translate all type
+    context->nodeStack.push(this);
+    //delegate to child node
+    this->stat->codeGen(context);
+    this->stmt = this->stat->stmt;
+    context->nodeStack.pop();
 }
 
 ExprNode::ExprNode(ExprType type, PrimaryNode *node) {
@@ -280,6 +342,42 @@ void ExprNode::Visit() {
         this->methodCallParams->Visit();
 }
 
+void ExprNode::codeGen(JContext *context){
+    // TODO: translate all expr type
+    if (this->type == IDEN_METHOD || this->type == IDEN_DOT_METHOD){
+        // push context
+        context->nodeStack.push(this);
+        for (auto params : *methodCallParams->exprs){
+            params->codeGen(context);
+            this->stmt->insert(this->stmt->end(), 
+                params->stmt->begin(),
+                params->stmt->end());
+        }
+        context->nodeStack.pop();
+
+        // TODO: symbol table
+        JInstructionStmt *s = new JInstructionStmt;
+        s->pc = nullptr;
+        s->opcode = new string("invokevirtual");
+        string argStr = "";
+        for (auto id : *ids){
+            argStr += id->name;
+            if (id != *(ids->end()-1)){
+                argStr += '/';
+            }
+        }
+        // TODO: generate descriptor
+        argStr += "(Ljava/lang/String;II)V";
+
+    } else if (this->type == PRIMARY_TYPE){
+        this->primary->codeGen(context);
+        this->stmt->insert(this->stmt->end(),
+            this->primary->stmt->begin(),
+            this->primary->stmt->end()
+            );
+    }
+}
+
 MethodCallParamsNode::MethodCallParamsNode() {
 
 }
@@ -315,6 +413,16 @@ void PrimaryNode::Visit() {
         this->literal->Visit();
 }
 
+void PrimaryNode::codeGen(JContext* context){
+    // TODO:
+    if (this->type == PRIMARY_LITERAL){
+        this->literal->codeGen(context);
+        this->stmt->insert(this->stmt->end(),
+            this->literal->stmt->begin(),
+            this->literal->stmt->end());
+    }
+}
+
 LiteralNode::LiteralNode(LiteralType type, int64_t val) {
     this->type = type;
     this->intVal = val;
@@ -333,5 +441,15 @@ LiteralNode::LiteralNode(LiteralType type, const string& val) {
 void LiteralNode::Visit() {
     if (this->type == STRING_LIT) {
         cout << this->stringVal << endl;
+    }
+}
+
+void LiteralNode::codeGen(JContext *context){
+    // TODO: complete it
+    if (this->type == STRING_LIT){
+        JInstructionStmt *s = new JInstructionStmt;
+        s->opcode = new string("ldc");
+        s->args = new vector<string>;
+        s->args->push_back('\"' + stringVal + "\"");
     }
 }

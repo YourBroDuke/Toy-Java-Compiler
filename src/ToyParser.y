@@ -384,7 +384,7 @@ MemberModifier:
 	| PRIVATE { $$ = PRIVATE_TYPE; }
 	| ABSTRACT { $$ = ABSTRACT_TYPE; }
 	| DEFAULT { $$ = DEFAULT_TYPE; }
-	| STATIC { $$ = DEFAULT_TYPE; }
+	| STATIC { $$ = STATIC_TYPE; }
 	| STRICTFP { $$ = STRICTFP_TYPE; }
 	;
 
@@ -463,6 +463,7 @@ TypeType:
 		TypeTypeNode* tmp = new TypeTypeNode(NONPR_TYPE);
 		tmp->typeInfo = new vector<IdentifierNode*>;
 		tmp->typeInfo->push_back(new IdentifierNode(*$1));
+		tmp->arrayDim = 0;
 		$$ = tmp;
 	}
 	| IDENTIFIER LRBrackList {
@@ -470,6 +471,7 @@ TypeType:
 		tmp->typeInfo = new vector<IdentifierNode*>;
 		tmp->typeInfo->push_back(new IdentifierNode(*$1));
 		tmp->arrayDim = $2;
+		$$ = tmp;
 	}
 	| PrimitiveType { }
 	| PrimitiveType LRBrackList { }
@@ -574,7 +576,7 @@ Statement:
 	| RETURN SEMIC { debugInfo("return;"); }
 	| SEMIC {  }
 	| Expression SEMIC {
-		$$ = new StatementNode(EXPR_TYPE, $1);
+		$$ = new StatementNode(EXPR_TYPE, dynamic_cast<ExprNode*>($1));
 	}
 	;
 
@@ -658,6 +660,8 @@ LRBrackList:
 %%
 
 // Hello
+#include "codeGen/Generator.hpp"
+
 int main() {
 	#define YYDEBUG 1
 #ifdef YYDEBUG
@@ -665,5 +669,7 @@ int main() {
 #endif
 	cout << yydebug << endl;
 	yyparse();
-	// rootNode->Visit();
+	rootNode->Visit();
+	// JContext *context = new JContext(rootNode);
+	// JasminFileGenerator *g = new JasminFileGenerator(context);
 }

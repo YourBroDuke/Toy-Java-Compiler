@@ -11,5 +11,9 @@ JasminFileGenerator::~JasminFileGenerator()
 
 
 bool JasminFileGenerator::Generate(){
-    
+    this->context->root->codeGen(this->context);
+}
+
+void JasminFileGenerator::WriteTo(ostream& out){
+    out << this->context->classFile->toString() << endl;
 }

@@ -24,6 +24,7 @@ class JStmt;
 struct JClassSpec{
     string accessSpec;
     string className;
+    string toString();
 };
 
 class JasminHeader{
@@ -43,6 +44,7 @@ class JasminHeader{
     public:
         JasminHeader();
         ~JasminHeader();
+        string toString();
 };
 
 /*
@@ -84,6 +86,7 @@ class JMethod{
     public:
         JMethod();
         ~JMethod();
+        string toString();
 };
 
 /*
@@ -116,11 +119,13 @@ class JMethod{
 
 class JStmt {
     public:
+        JStmt();
+        ~JStmt();
         virtual string toString();
 };
 
 class JInstructionStmt : public JStmt{
-    private:
+    public:
         // optional
         string *pc;
         string *opcode;
@@ -128,6 +133,7 @@ class JInstructionStmt : public JStmt{
         vector<string> *args;
     public:
         string toString();
+        JInstructionStmt();
 };
 
 class JasminFile{
@@ -142,6 +148,7 @@ class JasminFile{
 
         JasminFile();
         ~JasminFile();
+        string toString();
 };
 
 #endif
