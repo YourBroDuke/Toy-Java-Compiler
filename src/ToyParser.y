@@ -670,6 +670,9 @@ int main() {
 	cout << yydebug << endl;
 	yyparse();
 	rootNode->Visit();
-	// JContext *context = new JContext(rootNode);
-	// JasminFileGenerator *g = new JasminFileGenerator(context);
+	JContext *context = new JContext(rootNode);
+	JasminFileGenerator *g = new JasminFileGenerator(context);
+	debugInfo("start generating...");
+	g->Generate();
+	g->WriteTo(cout);
 }

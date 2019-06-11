@@ -1,4 +1,6 @@
 #include "Generator.hpp"
+#include <iostream>
+using namespace std;
 
 JasminFileGenerator::JasminFileGenerator(JContext *context)
 {

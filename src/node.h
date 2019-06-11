@@ -46,6 +46,9 @@ public:
     FileNode();
     ~FileNode();
     void Visit();
+
+public:
+    void codeGen(JContext* context);
 };
 
 // omit

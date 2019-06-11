@@ -3,6 +3,14 @@
 #include <iostream>
 using namespace std;
 
+#define DEBUG
+
+void debugInfo(const string& info){
+    #ifdef DEBUG
+    cout << info << endl;
+    #endif
+}
+
 void Node::codeGen(JContext* context) {
 
 }
@@ -25,6 +33,22 @@ void FileNode::Visit(){
     }
 }
 
+void FileNode::codeGen(JContext *context){
+    debugInfo("codeGen enter FileNode");
+    if (this->packageNode != nullptr){
+        this->packageNode->codeGen(context);
+        debugInfo("codeGen packageNode done!");
+    }
+    for (auto import : *importNodes){
+        import->codeGen(context);
+    }
+    debugInfo("codeGen importNodes done!");
+    for (auto decl: *typeDeclNodes){
+        decl->codeGen(context);
+    }
+    debugInfo("codeGen typeDeclNodes done!");
+}
+
 PackageNode::PackageNode(QualifiedNameNode *node) {
     this->qNode = node;
 }
@@ -33,12 +57,20 @@ void PackageNode::Visit() {
     this->qNode->Visit();
 }
 
+void PackageNode::codeGen(JContext* context){
+    debugInfo("codeGen enter packageNode");
+}
+
 ImportNode::ImportNode() {
 
 }
 
 void ImportNode::Visit() {
 
+}
+
+void ImportNode::codeGen(JContext* context){
+    debugInfo("codeGen enter ImportNode");
 }
 
 IdentifierNode::IdentifierNode(const string& name) {
@@ -72,6 +104,7 @@ void TypeDeclNode::codeGen(JContext* context){
         this->classSpec->accessSpec += ModifierMap.at(modifer) + " ";
     }
     this->classSpec->className = this->classDecl->className->name;
+    // TODO: pointer copy
     context->classFile->jasminHeader->classSpec = this->classSpec;
     context->nodeStack.pop();
 

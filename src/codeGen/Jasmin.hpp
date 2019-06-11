@@ -119,9 +119,7 @@ class JMethod{
 
 class JStmt {
     public:
-        JStmt();
-        ~JStmt();
-        virtual string toString();
+        virtual string toString()=0;
 };
 
 class JInstructionStmt : public JStmt{

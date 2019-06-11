@@ -21,32 +21,29 @@ JasminFile::~JasminFile(){
  */
 
 JasminHeader::JasminHeader() {
-
+    bytecodeVersion = nullptr;
+    sourceFile = nullptr;
+    classSpec = nullptr;
+    superSpec = nullptr;
+    implements = nullptr;
+    signature = nullptr;
+    enclosing = nullptr;
 }
 
 JasminHeader::~JasminHeader() {
-
+    // TODO:
 }
 
 JMethod::JMethod() {
-
+    accessSpec = nullptr;
+    methodName = nullptr;
+    descriptor = nullptr;
+    JStmts = nullptr;
 }
 
 JMethod::~JMethod() {
 
 }
-
-JStmt::JStmt() {
-
-}
-JStmt::~JStmt() {
-
-}
-
-string JStmt::toString() {
-    return "";
-}
-
 /*
  -----------------END-------------------
  */
