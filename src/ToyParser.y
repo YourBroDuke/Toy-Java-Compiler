@@ -645,6 +645,7 @@ LRBrackList:
 %%
 
 // Hello
+#include "codeGen/Genrator.hpp"
 int main() {
 	#define YYDEBUG 1
 #ifdef YYDEBUG
@@ -653,4 +654,6 @@ int main() {
 	cout << yydebug << endl;
 	yyparse();
 	// rootNode->Visit();
+	JContext *context = new JContext(rootNode);
+	JasminFileGenrator *g = new JasminFileGenrator(context);
 }

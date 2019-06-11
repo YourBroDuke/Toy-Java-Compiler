@@ -1,9 +1,10 @@
 target = lavac
 CC = g++
 CPPFLAG = -std=c++11
+OBJS = y.tab.o lex.yy.o node.o context.o Generator.o Jasmin.o
 
-$(target):y.tab.o lex.yy.o node.o
-	$(CC) -o $(target)  y.tab.o lex.yy.o node.o -lfl -ly
+$(target):$(OBJS)
+	$(CC) -o $(CPPFLAG) $@ $^ -lfl -ly
 
 y.tab.c:ToyParser.y
 	yacc ToyParser.y -d -v --debug
@@ -21,6 +22,9 @@ lex.yy.o:lex.yy.c node.h
 
 node.o:node.cpp node.h
 	$(CC) $(CPPFLAG) -c node.cpp
+
+%.o:%.cpp
+	$(CC) $(CPPFLAG) -c $@ $<
 
 clean:
 	rm *.o $(target) y.tab.c y.tab.h lex.yy.c

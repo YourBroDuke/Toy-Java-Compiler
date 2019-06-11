@@ -22,6 +22,7 @@ using namespace std;
 struct JClassSpec{
     string accessSpec;
     string className;
+    string toString();
 };
 
 class JasminHeader{
@@ -128,6 +129,7 @@ class JInstructionStmt : public JStmt{
         vector<string> *args;
     public:
         string toString();
+        JInstructionStmt();
 };
 
 class JasminFile{

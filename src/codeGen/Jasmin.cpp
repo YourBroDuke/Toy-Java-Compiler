@@ -26,18 +26,68 @@ string JDescriptor::toString(){
     return result + this->ret;
 }
 
-string JasminHeader::toString(){
+string JClassSpec::toString(){
+    return ".class " + accessSpec + " " + className + "\n";
+}
 
+string JasminHeader::toString(){
+    string ret;
+    if (bytecodeVersion != nullptr){
+        ret += ".bytecode " + *bytecodeVersion + "\n";
+    }
+    if (sourceFile != nullptr){
+        ret += ".source " + *sourceFile + "\n";
+    }
+    ret += classSpec->toString();
+    // TODO: super specification
+    ret += ".super java/lang/Object";
+    if (implements != nullptr){
+        ret += *implements;
+    }
+    if (signature != nullptr){
+        ret += ".signature " + *signature + "\n";
+    }
+    if (enclosing != nullptr){
+        ret += ".enclosing " + *enclosing + "\n";
+    }
+    return ret;
 }
 
 string JMethod::toString(){
+    string ret = ".method ";
+    ret += *accessSpec + " ";
+    ret += *methodName + " ";
+    ret += descriptor->toString + " \n";
+    for (auto stmt : *JStmts){
+        ret += stmt->toString();
+    }
+    return ret + ".end method\n";
+}
 
+JInstructionStmt::JInstructionStmt(){
+    this->args = new vector<string>;
 }
 
 string JInstructionStmt::toString(){
-
+    string ret = "";
+    // TODO: PC support
+    ret += *opcode;
+    for (auto arg : *args){
+        ret += " " + arg;
+    }
+    return ret + "\n";
 }
 
 string JasminFile::toString(){
-    
+    string ret = "";
+    ret += jasminHeader->toString();
+    if (JFields != nullptr){
+        // TODO:
+    }
+    if (JMethods != nullptr){
+        for (auto method : *JMethods){
+            ret += method.toString();
+        }
+    }
+    return ret;
 }
