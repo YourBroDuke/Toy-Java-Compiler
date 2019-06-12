@@ -138,9 +138,9 @@ class JasminFile{
     public:
         JasminHeader *jasminHeader;
         // optional 
-        vector<JField> *JFields;
+        vector<JField*> *JFields;
         // optional
-        vector<JMethod> *JMethods;
+        vector<JMethod*> *JMethods;
     
     public:
 

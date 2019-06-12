@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
 
 #include "MetaType.h"
 #include "codeGen/Jasmin.hpp"
@@ -15,7 +16,7 @@ class Node
 {
 public:
     virtual void Visit() = 0;
-    void codeGen(JContext *context);
+    virtual void codeGen(JContext *context) = 0;
 };
 
 class PackageNode;
@@ -101,6 +102,9 @@ public:
     void Visit();
     QualifiedNameNode();
     ~QualifiedNameNode();
+
+public:
+    void codeGen(JContext* context);
 };
 
 class IdentifierNode : public Node
@@ -111,6 +115,9 @@ public:
     void Visit();
     IdentifierNode(const string& name);
     ~IdentifierNode();
+
+public:
+    void codeGen(JContext* context);
 };
 
 /* START */
@@ -223,6 +230,9 @@ public:
     void Visit();
     VariableDeclaratorIdNode(int dim, const string& name);
     ~VariableDeclaratorIdNode();
+
+public:
+    void codeGen(JContext* context);
 };
 
 class BlockNode : public Node
@@ -242,9 +252,9 @@ public:
 class Statement: public Node{
     public:
         vector<JStmt*> *stmt;
-        Statement(){
-            stmt = new vector<JStmt*>;
-        }
+        Statement();
+    void Visit();
+    void codeGen(JContext *context);
 };
 
 class BlockStatementNode : public Statement
@@ -304,6 +314,9 @@ public:
     void Visit();
     MethodCallParamsNode();
     ~MethodCallParamsNode();
+
+public:
+    void codeGen(JContext* context);
 };
 
 class PrimaryNode : public Statement

@@ -55,7 +55,7 @@ string JDescriptor::toString(){
         result += s + ';';
     }
 
-    return result + this->ret;
+    return result + ')' + this->ret;
 }
 
 string JClassSpec::toString(){
@@ -72,7 +72,7 @@ string JasminHeader::toString(){
     }
     ret += classSpec->toString();
     // TODO: super specification
-    ret += ".super java/lang/Object";
+    ret += ".super java/lang/Object\n";
     if (implements != nullptr){
         ret += *implements;
     }
@@ -88,12 +88,12 @@ string JasminHeader::toString(){
 string JMethod::toString(){
     string ret = ".method ";
     ret += *accessSpec + " ";
-    ret += *methodName + " ";
-    ret += descriptor->toString() + " \n";
+    ret += *methodName;
+    ret += descriptor->toString() + "\n";
     for (auto stmt : *JStmts){
         ret += stmt->toString();
     }
-    return ret + ".end method\n";
+    return ret + "return\n" + ".end method\n";
 }
 
 JInstructionStmt::JInstructionStmt(){
@@ -118,7 +118,7 @@ string JasminFile::toString(){
     }
     if (JMethods != nullptr){
         for (auto method : *JMethods){
-            ret += method.toString();
+            ret += method->toString();
         }
     }
     return ret;

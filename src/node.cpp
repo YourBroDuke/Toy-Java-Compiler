@@ -34,6 +34,7 @@ void FileNode::Visit(){
 }
 
 void FileNode::codeGen(JContext *context){
+    cout << "IN" << endl;
     debugInfo("codeGen enter FileNode");
     if (this->packageNode != nullptr){
         this->packageNode->codeGen(context);
@@ -81,6 +82,10 @@ void IdentifierNode::Visit() {
     cout << this->name << endl;
 }
 
+void IdentifierNode::codeGen(JContext* context){
+    // terminal
+}
+
 TypeDeclNode::TypeDeclNode(ClassOrInterface t, ClassDeclNode *node) {
     this->type = t;
     this->classDecl = node;
@@ -97,6 +102,7 @@ void TypeDeclNode::Visit() {
 }
 
 void TypeDeclNode::codeGen(JContext* context){
+    debugInfo("codeGen enter TypeDeclNode");
     context->nodeStack.push(this);
     this->classSpec = new JClassSpec;
     this->classSpec->accessSpec = "";
@@ -122,7 +128,8 @@ void ClassDeclNode::Visit() {
 }
 
 void ClassDeclNode::codeGen(JContext* context) {
-
+    debugInfo("codeGen enter ClassDeclNode");
+    this->classBody->codeGen(context);
 }
 
 QualifiedNameNode::QualifiedNameNode() {
@@ -135,11 +142,16 @@ void QualifiedNameNode::Visit() {
     }
 }
 
+void QualifiedNameNode::codeGen(JContext* context){
+    //TODO:
+}
+
 
 ClassBodyNode::ClassBodyNode() {
 }
 
 void ClassBodyNode::codeGen(JContext *context){
+    debugInfo("codeGen enter ClassBodyNode");
     for (auto node : *this->memberDecls){
         node->codeGen(context);
     }
@@ -155,6 +167,7 @@ MemberDeclNode::MemberDeclNode(Node *decl) {
 }
 
 void MemberDeclNode::codeGen(JContext *context){
+    debugInfo("codeGen enter MemberDeclNode");
     context->nodeStack.push(this);
     this->mainDecl->codeGen(context);
 }
@@ -187,6 +200,7 @@ void MethodDeclNode::Visit() {
 }
 
 void MethodDeclNode::codeGen(JContext *context){
+    debugInfo("codeGen enter MethodDeclNode");
     auto parNode = dynamic_cast<MemberDeclNode*>(context->nodeStack.top());
     context->nodeStack.pop();
     // pop
@@ -196,20 +210,29 @@ void MethodDeclNode::codeGen(JContext *context){
         *this->method->accessSpec += ModifierMap.at(modifier) + " ";
     }
     this->method->methodName = new string(this->nodeName->name);
+    // Refact:
+    this->method->descriptor = new JDescriptor;
+    this->method->descriptor->params = new vector<string>;
 
     for (auto p : *this->params){
         p->codeGen(context);
         this->method->descriptor->params->push_back(*p->paramStr);
     }
+    debugInfo("codeGen MethodDeclNode params generation done.");
 
     this->typeInfo->codeGen(context);
     this->method->descriptor->ret = this->typeInfo->typeStr;
+    debugInfo("codeGen MethodDeclNode descriptor generation done.");
 
     context->nodeStack.push(this->methodBody);
     //push block
     this->methodBody->codeGen(context);
     // copy TODO: pointer copy
     this->method->JStmts = this->methodBody->Jstmts;
+
+    context->classFile->JMethods = new vector<JMethod*>;
+    context->classFile->JMethods->push_back(this->method);
+    debugInfo("codeGen exit MethodDeclNode");
 }
 
 TypeTypeNode::TypeTypeNode(PrimitiveTypeOrNot type) {
@@ -224,18 +247,28 @@ void TypeTypeNode::printType() {
 }
 
 void TypeTypeNode::codeGen(JContext* context){
+    debugInfo("codeGen enter TypeTypeNode");
     // MARK: should the ID be preserved?
     if (this->type == NONPR_TYPE){
-        this->typeStr = "L";
-        for (auto id : *this->typeInfo){
-            this->typeStr += id->name;
-            if (id != *(this->typeInfo->end()-1)){
-                this->typeStr += '/';
+        this->typeStr = "";
+        for (int i = 0; i < this->arrayDim; ++i){
+            this->typeStr += "[";
+        }
+        this->typeStr += "L";
+        if (this->typeInfo->size() == 1 && (*this->typeInfo->begin())->name == "String"){
+            this->typeStr += "java/lang/String";
+        }else{
+            for (auto id : *this->typeInfo){
+                this->typeStr += id->name;
+                if (id != *(this->typeInfo->end()-1)){
+                    this->typeStr += '/';
+                }
             }
         }
     }else{
         this->typeStr = PrimitiveTypeOrNotMap.at(this->type);
     }
+    debugInfo("codeGen exit TypeTypeNode");
 }
 
 void TypeTypeNode::Visit() {
@@ -258,6 +291,7 @@ void FormalParamNode::Visit() {
 }
 
 void FormalParamNode::codeGen(JContext *context){
+    debugInfo("codeGen enter FormalParamNode");
     this->paramType->codeGen(context);
     this->paramStr = new string(this->paramType->typeStr);
 }
@@ -271,8 +305,12 @@ void VariableDeclaratorIdNode::Visit() {
     this->variableName->Visit();
 }
 
-BlockNode::BlockNode() {
+void VariableDeclaratorIdNode::codeGen(JContext *context){
+    // TODO:
+}
 
+BlockNode::BlockNode() {
+    this->Jstmts = new vector<JStmt*>;
 }
 
 void BlockNode::Visit() {
@@ -282,6 +320,7 @@ void BlockNode::Visit() {
 }
 
 void BlockNode::codeGen(JContext* context){
+    debugInfo("codeGen enter BlockNode");
     context->nodeStack.push(this);
     for (auto stmt: *this->stats){
         stmt->codeGen(context);
@@ -291,6 +330,15 @@ void BlockNode::codeGen(JContext* context){
             stmt->stmt->end());
     }
     context->nodeStack.pop();
+    debugInfo("codeGen exit BlockNode");
+}
+
+Statement::Statement(){
+    this->stmt = new vector<JStmt*>;
+}
+
+void Statement::Visit(){
+
 }
 
 BlockStatementNode::BlockStatementNode(StatementNode *stat) {
@@ -302,8 +350,10 @@ void BlockStatementNode::Visit() {
 }
 
 void BlockStatementNode::codeGen(JContext *context){
+    debugInfo("codeGen enter BlockStatementNode");
     this->stat->codeGen(context);
     this->stmt = this->stat->stmt;
+    debugInfo("codeGen exit BlockStatementNode");
 }
 
 StatementNode::StatementNode(StatementType type, Statement *stat) {
@@ -323,12 +373,18 @@ void StatementNode::Visit() {
 }
 
 void StatementNode::codeGen(JContext *context){
+    debugInfo("codeGen enter StatementNode");
     // TODO: translate all type
     context->nodeStack.push(this);
     //delegate to child node
     this->stat->codeGen(context);
     this->stmt = this->stat->stmt;
     context->nodeStack.pop();
+    debugInfo("codeGen exit StatementNode");
+}
+
+void Statement::codeGen(JContext* context){
+    cerr << "ERROR! This should not be entered!" << endl;
 }
 
 ExprNode::ExprNode(ExprType type, PrimaryNode *node) {
@@ -376,6 +432,7 @@ void ExprNode::Visit() {
 }
 
 void ExprNode::codeGen(JContext *context){
+    debugInfo("codeGen enter ExprNode");
     // TODO: translate all expr type
     if (this->type == IDEN_METHOD || this->type == IDEN_DOT_METHOD){
         // push context
@@ -401,6 +458,9 @@ void ExprNode::codeGen(JContext *context){
         }
         // TODO: generate descriptor
         argStr += "(Ljava/lang/String;II)V";
+        s->args->push_back(argStr);
+
+        this->stmt->push_back(s);
 
     } else if (this->type == PRIMARY_TYPE){
         this->primary->codeGen(context);
@@ -418,6 +478,11 @@ MethodCallParamsNode::MethodCallParamsNode() {
 void MethodCallParamsNode::Visit() {
     for (auto node : *this->exprs)
         node->Visit();
+}
+
+void MethodCallParamsNode::codeGen(JContext* context){
+    // ignore for now
+    // TODO:
 }
 
 PrimaryNode::PrimaryNode(PrimaryNodeType type, ExprNode *node) {
@@ -447,6 +512,7 @@ void PrimaryNode::Visit() {
 }
 
 void PrimaryNode::codeGen(JContext* context){
+    debugInfo("codeGen enter PrimaryNode");
     // TODO:
     if (this->type == PRIMARY_LITERAL){
         this->literal->codeGen(context);
@@ -483,6 +549,7 @@ void LiteralNode::codeGen(JContext *context){
         JInstructionStmt *s = new JInstructionStmt;
         s->opcode = new string("ldc");
         s->args = new vector<string>;
-        s->args->push_back('\"' + stringVal + "\"");
+        s->args->push_back(stringVal);
+        this->stmt->push_back(s);
     }
 }
