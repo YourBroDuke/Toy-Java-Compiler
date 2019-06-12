@@ -1,23 +1,7 @@
 package org.gilmour.test;
 
-public class hello{
-    public static void main(String[] args){
+public class hello {
+    public static void main(String[] args) {
         System.out.println("Hello world!");
     }
 }
-
-
-LocalVariableDecl:
-	VariableModifierList TypeType VariableDeclarators
-	| TypeType VariableDeclarators
-	;
-
-TypeType:
-	IdentifierListWithDot 
-	| IDENTIFIER LRBrackListOptional
-	| PrimitiveType LRBrackListOptional
-	;
-
-    LRBrackListOptional
-
-Expression LBRACK Expression RBRACK

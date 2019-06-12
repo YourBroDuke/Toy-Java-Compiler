@@ -66,9 +66,10 @@ void debugInfo(string *s){
 %token <token> SINGLES ASSIGNS
 
 %type <node> CompilationUnit PackageDecl  TypeDecl MemberDecl TypeType MethodBody
-%type <node> ClassDecl ClassBodyDecl QualifiedName ClassBody  MethodDecl Literal
-%type <node> VariableDeclaratorId Blcok BlockStatement Statement Expression Primary
-%type <token> LRBrackList LRBrackListOptional
+%type <node> ClassDecl QualifiedName ClassBody  MethodDecl Literal ImportDecl
+%type <node> VariableDeclaratorId Block BlockStatement Statement Expression Primary
+%type <node> MethodCallWithoutName FormalParam
+%type <token> LRBrackList
 %type <importNodes> ImportDeclListOptional
 %type <typeDeclNodes> TypeDeclListOptional
 %type <memberModifiers> MemberModifierListOptional ClassOrInterfaceModifierListOptional
@@ -95,6 +96,9 @@ void debugInfo(string *s){
 
 %right ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN AND_ASSIGN OR_ASSIGN XOR_ASSIGN LSHIFT_ASSIGN RSHIFT_ASSIGN URSHIFT_ASSIGN 
 %right BANG TILDE INCRE DECRE
+
+%nonassoc IFX
+%nonassoc ELSE
 /* Define the type of node our nonterminal symbols represent.
    The types refer to the %union declaration above. Ex: when
    we call an ident (defined by union type ident) we are really
@@ -108,6 +112,7 @@ void debugInfo(string *s){
 
 %%
 
+ /* done */
 CompilationUnit:
 	PackageDecl ImportDeclListOptional TypeDeclListOptional {
 		rootNode->packageNode = dynamic_cast<PackageNode*>($1);
@@ -120,11 +125,11 @@ CompilationUnit:
 		rootNode->typeDeclNodes = $2;
 	}
 	;
-
+ /* done */
 PackageDecl:
 	PACKAGE QualifiedName SEMIC { $$ = new PackageNode(dynamic_cast<QualifiedNameNode*>($2)); }
 	;
-
+ /* done */
 ImportDeclListOptional:
 	ImportDeclListOptional ImportDecl { $1->push_back(dynamic_cast<ImportNode*>($2)); $$ = $1; }
 	| { $$ = new vector<ImportNode*>; }
@@ -145,7 +150,7 @@ TypeImportDecl:
 	| IMPORT STATIC QualifiedName DOT MUL SEMIC
 	;
 
- /*  TypeDecl */
+ /* done */
 TypeDeclListOptional:
 	TypeDeclListOptional TypeDecl {
 		$1->push_back(dynamic_cast<TypeDeclNode*>($2));
@@ -154,15 +159,17 @@ TypeDeclListOptional:
 	| {$$ = new vector<TypeDeclNode*>;}
 	;
 
+ /* almost done */
 TypeDecl:
 	ClassOrInterfaceModifierListOptional ClassDecl {
-		$$ = new TypeDeclNode(CLASS, dynamic_cast<ClassDeclNode*>($2));
-		$$->modifiers = $1;
+		$$ = new TypeDeclNode(CLASS_TYPE, dynamic_cast<ClassDeclNode*>($2));
+		dynamic_cast<TypeDeclNode*>($$)->modifiers = $1;
 	}
 	| ClassOrInterfaceModifierListOptional InterfaceDecl { debugInfo("This is an Interface declaration"); }
 	| SEMIC {$$ = NULL;}
 	;
 
+ /* done */
 ClassDecl:
 	CLASS IDENTIFIER ClassBody { 
 		$$ = new ClassDeclNode(*$2, dynamic_cast<ClassBodyNode*>($3));
@@ -176,25 +183,26 @@ InterfaceDecl:
 	INTERFACE IDENTIFIER InterfaceBody
 	;
 
- /* ClassBody */
+ /* done */
 ClassBody:
 	LBRACE RBRACE {
 		$$ = new ClassBodyNode();
-		$$->memberDecls = new vector<MemberDeclNode*>;
+		dynamic_cast<ClassBodyNode*>($$)->memberDecls = new vector<MemberDeclNode*>;
 	}
 	| LBRACE ClassBodyDeclList RBRACE {
 		$$ = new ClassBodyNode();
-		$$->memberDecls = $2;
+		dynamic_cast<ClassBodyNode*>($$)->memberDecls = $2;
 	}
 	;
 
+ /* done */
 ClassBodyDeclList:
 	MemberDecl {
 		$$ = new vector<MemberDeclNode*>;
-		$$->push_back(dynamic_cast<MemberDecl*>($1));
+		$$->push_back(dynamic_cast<MemberDeclNode*>($1));
 	}
 	| ClassBodyDeclList MemberDecl {
-		$1->push_back(dynamic_cast<MemberDecl*>($2));
+		$1->push_back(dynamic_cast<MemberDeclNode*>($2));
 		$$ = $1;
 	}
 	;
@@ -219,7 +227,10 @@ MethodCallWithoutName:
 		$$ = new MethodCallParamsNode();
 		dynamic_cast<MethodCallParamsNode*>($$)->exprs = $2;
 	}
-	| LPAREN RPAREN
+	| LPAREN RPAREN {
+		$$ = new MethodCallParamsNode();
+		dynamic_cast<MethodCallParamsNode*>($$)->exprs = new vector<ExprNode*>;
+	}
 	;
 
 Expression:
@@ -230,9 +241,10 @@ Expression:
 	| IdentifierListWithDot MethodCallWithoutName {
 		ExprNode *tmp = new ExprNode(IDEN_DOT_METHOD);
 		tmp->ids = $1;
-		tmp->methodCallParams = $2;
+		tmp->methodCallParams = dynamic_cast<MethodCallParamsNode*>($2);
 		$$ = tmp;
 	}
+<<<<<<< HEAD
 	| IDENTIFIER LBRACK Expression RBRACK
 	| IdentifierListWithDot LBRACK Expression RBRACK
 	| IDENTIFIER MethodCallWithoutName
@@ -413,7 +425,7 @@ Primary:
 	LPAREN Expression RPAREN {  }
 	| THIS {  }
 	| SUPER {  }
-	| Literal { $$ = new PrimaryNode(PRIMARY_LITERAL, $1); }
+	| Literal { $$ = new PrimaryNode(PRIMARY_LITERAL, dynamic_cast<LiteralNode*>$1); }
 	| IDENTIFIER { debugInfo($1); }
 	;
 
@@ -462,8 +474,10 @@ InterfaceMemberDecl:
 
 
 InterfaceMethodDecl:
-	InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams LRBrackListOptional THROWS QualifiedNameList MethodBody
-	| InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams LRBrackListOptional MethodBody
+	InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams LRBrackList THROWS QualifiedNameList MethodBody
+	| InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams LRBrackList MethodBody
+	| InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams THROWS QualifiedNameList MethodBody
+	| InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams MethodBody
 	;
 
 InterfaceMethodModifierListOptional:
@@ -481,8 +495,8 @@ MemberModifier:
 	| PROTECTED { $$ = PROTECTED_TYPE; }
 	| PRIVATE { $$ = PRIVATE_TYPE; }
 	| ABSTRACT { $$ = ABSTRACT_TYPE; }
-	| DEFAULT { $$ = DEFAULT_VAL; }
-	| STATIC { $$ = DEFAULT_VAL; }
+	| DEFAULT { $$ = DEFAULT_TYPE; }
+	| STATIC { $$ = STATIC_TYPE; }
 	| STRICTFP { $$ = STRICTFP_TYPE; }
 	;
 
@@ -515,7 +529,7 @@ FormalParameterWithCommaList:
 
 FormalParam:
 	TypeType VariableDeclaratorId {
-		$$ = new FormalParamNode(dynamic_cast<TypeTypeNode*>($1), dynamic_cast<VariableDeclaratorIdNode>($2));
+		$$ = new FormalParamNode(dynamic_cast<TypeTypeNode*>($1), dynamic_cast<VariableDeclaratorIdNode*>($2));
 	}
 	;
 
@@ -556,13 +570,23 @@ IdentifierListWithDot:
 
 
 TypeType:
-	IdentifierListWithDot { } 
+	IdentifierListWithDot { }
 	| IDENTIFIER {
-		$$ = new TypeTypeNode(NONPR_TYPE);
-		$$->typeInfo = new vector<IdentifierNode*>;
-		$$->typeInfo->push_back(new IdentifierNode(*$1));
+		TypeTypeNode* tmp = new TypeTypeNode(NONPR_TYPE);
+		tmp->typeInfo = new vector<IdentifierNode*>;
+		tmp->typeInfo->push_back(new IdentifierNode(*$1));
+		tmp->arrayDim = 0;
+		$$ = tmp;
 	}
-	| PrimitiveType LRBrackListOptional { }
+	| IDENTIFIER LRBrackList {
+		TypeTypeNode* tmp = new TypeTypeNode(NONPR_TYPE);
+		tmp->typeInfo = new vector<IdentifierNode*>;
+		tmp->typeInfo->push_back(new IdentifierNode(*$1));
+		tmp->arrayDim = $2;
+		$$ = tmp;
+	}
+	| PrimitiveType { }
+	| PrimitiveType LRBrackList { }
 	;
 
 TypeTypeOrVoid:
@@ -593,10 +617,7 @@ VariableDeclarator:
 	;
 
 VariableDeclaratorId:
-	IDENTIFIER LRBrackList {
-		$$ = new VariableDeclaratorIdNode($2, *$1);
-	}
-	| IDENTIFIER {
+	IDENTIFIER {
 		$$ = new VariableDeclaratorIdNode(0, *$1);
 	}
 	;
@@ -623,21 +644,21 @@ ArrayInitializer:
 Block:
 	LBRACE BlockStatementList RBRACE {
 		$$ = new BlockNode();
-		$$->stats = $2;
+		dynamic_cast<BlockNode*>($$)->stats = $2;
 	}
 	| LBRACE RBRACE {
 		$$ = new BlockNode();
-		$$->stats = new vector<BlockStatementNode*>;
+		dynamic_cast<BlockNode*>($$)->stats = new vector<BlockStatementNode*>;
 	}
 	;
 
 BlockStatementList:
 	BlockStatement {
 		$$ = new vector<BlockStatementNode*>;
-		$$->push_back(dynamic_cast<BlockStatement*>($1));
+		$$->push_back(dynamic_cast<BlockStatementNode*>($1));
 	}
 	| BlockStatementList BlockStatement {
-		$1->push_back(dynamic_cast<BlockStatement*>($2));
+		$1->push_back(dynamic_cast<BlockStatementNode*>($2));
 		$$ = $1;
 	}
 	;
@@ -661,13 +682,13 @@ LocalVariableDecl:
 Statement:
 	Block {  }
 	| IF ParExpression Statement ELSE Statement { debugInfo("if () else ()"); }
-	| IF ParExpression Statement {  }
+	| IF ParExpression Statement %prec IFX {  }
 	| FOR LPAREN ForControl RPAREN Statement { debugInfo("for statement"); }
 	| RETURN Expression SEMIC {  }
 	| RETURN SEMIC { debugInfo("return;"); }
 	| SEMIC {  }
 	| Expression SEMIC {
-		$$ = new StatementNode(EXPR_TYPE, $1);
+		$$ = new StatementNode(EXPR_TYPE, dynamic_cast<ExprNode*>($1));
 	}
 	;
 
@@ -675,7 +696,7 @@ Statement:
 MemberDecl:
 	MemberModifierListOptional MethodDecl {
 		$$ = new MemberDeclNode($2);
-		$$->modifiers = $1;
+		dynamic_cast<MemberDeclNode*>($$)->modifiers = $1;
 	}
 	| MemberModifierListOptional FieldDecl { debugInfo("Reduced from FieldDecl"); }
 	| MemberModifierListOptional ConstructorDecl { }
@@ -690,7 +711,7 @@ MethodDecl:
 	| TypeType IDENTIFIER FormalParams MethodBody { debugInfo("Reduced MethodDecl"); }
 	| VOID IDENTIFIER FormalParams MethodBody {
 		$$ = new MethodDeclNode(new TypeTypeNode(VOID_TYPE), *$2, dynamic_cast<BlockNode*>($4));
-		$$->params = $3;
+		dynamic_cast<MethodDeclNode*>($$)->params = $3;
 	}
 	;
 
@@ -741,12 +762,6 @@ Literal:
 	| NULL_LITERAL { }
 	;
 
-
-LRBrackListOptional:
-	LRBrackListOptional LBRACK RBRACK
-	|
-	;
-
 LRBrackList:
 	LBRACK RBRACK { $$ = 1; }
 	| LRBrackList LBRACK RBRACK { $$ = $2 + 1; }
@@ -757,6 +772,8 @@ LRBrackList:
 %%
 
 // Hello
+#include "codeGen/Generator.hpp"
+
 int main() {
 	#define YYDEBUG 1
 #ifdef YYDEBUG
@@ -764,5 +781,10 @@ int main() {
 #endif
 	cout << yydebug << endl;
 	yyparse();
-	// rootNode->Visit();
+	rootNode->Visit();
+	JContext *context = new JContext(rootNode);
+	JasminFileGenerator *g = new JasminFileGenerator(context);
+	debugInfo("start generating...");
+	g->Generate();
+	g->WriteTo(cout);
 }

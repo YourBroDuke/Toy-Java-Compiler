@@ -19,9 +19,12 @@ using namespace std;
     [.inner interface [<access>] [<name>] [inner <classname>] [outer <name>]]*
 }
  */
+class JStmt;
+
 struct JClassSpec{
     string accessSpec;
     string className;
+    string toString();
 };
 
 class JasminHeader{
@@ -41,6 +44,7 @@ class JasminHeader{
     public:
         JasminHeader();
         ~JasminHeader();
+        string toString();
 };
 
 /*
@@ -82,6 +86,7 @@ class JMethod{
     public:
         JMethod();
         ~JMethod();
+        string toString();
 };
 
 /*
@@ -112,13 +117,13 @@ class JMethod{
 }
 */
 
-class JStmt{
+class JStmt {
     public:
-        virtual string toString();
+        virtual string toString()=0;
 };
 
 class JInstructionStmt : public JStmt{
-    private:
+    public:
         // optional
         string *pc;
         string *opcode;
@@ -126,20 +131,22 @@ class JInstructionStmt : public JStmt{
         vector<string> *args;
     public:
         string toString();
+        JInstructionStmt();
 };
 
 class JasminFile{
     public:
         JasminHeader *jasminHeader;
         // optional 
-        vector<JField> *JFields;
+        vector<JField*> *JFields;
         // optional
-        vector<JMethod> *JMethods;
+        vector<JMethod*> *JMethods;
     
     public:
 
         JasminFile();
         ~JasminFile();
+        string toString();
 };
 
 #endif

@@ -6,3 +6,4 @@ lavac
 y.tab.*
 lex.yy.*
 src/y.output
+src/ToyParser.output

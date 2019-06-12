@@ -3,17 +3,20 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
 
 #include "MetaType.h"
 #include "codeGen/Jasmin.hpp"
 #include "codeGen/context.hpp"
 using namespace std;
 
+class JContext;
+
 class Node
 {
 public:
     virtual void Visit() = 0;
-    void codeGen(JContext *context);
+    virtual void codeGen(JContext *context) = 0;
 };
 
 class PackageNode;
@@ -27,12 +30,13 @@ class MemberDeclNode;
 class TypeTypeNode;
 class FormalParamNode;
 class BlockNode;
-class VariableDeclaratorIDNode;
-class BlockStatement;
+class VariableDeclaratorIdNode;
 class StatementNode;
 class PrimaryNode;
 class MethodCallParamsNode;
 class LiteralNode;
+class ClassBodyNode;
+class BlockStatementNode;
 
 class FileNode : public Node
 {
@@ -43,6 +47,9 @@ public:
     FileNode();
     ~FileNode();
     void Visit();
+
+public:
+    void codeGen(JContext* context);
 };
 
 // omit
@@ -95,6 +102,9 @@ public:
     void Visit();
     QualifiedNameNode();
     ~QualifiedNameNode();
+
+public:
+    void codeGen(JContext* context);
 };
 
 class IdentifierNode : public Node
@@ -105,6 +115,9 @@ public:
     void Visit();
     IdentifierNode(const string& name);
     ~IdentifierNode();
+
+public:
+    void codeGen(JContext* context);
 };
 
 /* START */
@@ -125,7 +138,7 @@ public:
 };
 
 // declarations
-class ClassBodyNode
+class ClassBodyNode : public Node
 {
 public:
     vector<MemberDeclNode*> *memberDecls;
@@ -180,6 +193,7 @@ class TypeTypeNode : public Node
 public:
     PrimitiveTypeOrNot type;
     vector<IdentifierNode*> *typeInfo;
+    int arrayDim;
 
     void Visit();
     TypeTypeNode(PrimitiveTypeOrNot type);
@@ -196,10 +210,10 @@ class FormalParamNode : public Node
 {
 public:
     TypeTypeNode *paramType;
-    VariableDeclaratorIDNode *declNode;
+    VariableDeclaratorIdNode *declNode;
 
     void Visit();
-    FormalParamNode(TypeTypeNode *type, VariableDeclaratorIDNode* declNode);
+    FormalParamNode(TypeTypeNode *type, VariableDeclaratorIdNode *declNode);
     ~FormalParamNode();
 
 public:
@@ -207,15 +221,18 @@ public:
     string *paramStr;
 };
 
-class VariableDeclaratorIDNode : public Node
+class VariableDeclaratorIdNode : public Node
 {
 public:
     int arrayDim;
     IdentifierNode *variableName;
 
     void Visit();
-    VariableDeclaratorIDNode(int dim, const string& name);
-    ~VariableDeclaratorIDNode();
+    VariableDeclaratorIdNode(int dim, const string& name);
+    ~VariableDeclaratorIdNode();
+
+public:
+    void codeGen(JContext* context);
 };
 
 class BlockNode : public Node
@@ -232,7 +249,15 @@ public:
     void codeGen(JContext *context);
 };
 
-class BlockStatementNode : public Node
+class Statement: public Node{
+    public:
+        vector<JStmt*> *stmt;
+        Statement();
+    void Visit();
+    void codeGen(JContext *context);
+};
+
+class BlockStatementNode : public Statement
 {
 public:
     StatementNode *stat;
@@ -242,13 +267,7 @@ public:
     ~BlockStatementNode();
 
 public:
-    JStmt *stmt;
     void codeGen(JContext* context);
-};
-
-class Statement: public Node{
-    public:
-        JStmt *stmt;
 };
 
 class StatementNode :public Statement
@@ -290,14 +309,17 @@ public:
 class MethodCallParamsNode : public Node
 {
 public:
-    vector<ExprNode*> exprs;
+    vector<ExprNode*> *exprs;
 
     void Visit();
     MethodCallParamsNode();
     ~MethodCallParamsNode();
+
+public:
+    void codeGen(JContext* context);
 };
 
-class PrimaryNode : public Node
+class PrimaryNode : public Statement
 {
 public:
     PrimaryNodeType type;
@@ -310,9 +332,12 @@ public:
     PrimaryNode(PrimaryNodeType type, LiteralNode *node);
     PrimaryNode(PrimaryNodeType type, const string& id);
     ~PrimaryNode();
+
+public:
+    void codeGen(JContext *context);
 };
 
-class LiteralNode : public Node
+class LiteralNode : public Statement
 {
 public:
     LiteralType type;
@@ -325,6 +350,9 @@ public:
     LiteralNode(LiteralType type, double val);
     LiteralNode(LiteralType type, const string& val);
     ~LiteralNode();
+
+public:
+    void codeGen(JContext *context);
 };
 
 #endif

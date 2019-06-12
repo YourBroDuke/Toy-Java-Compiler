@@ -1,7 +1,7 @@
 #ifndef METATYPE_H
 #define METATYPE_H
 
-#include <unordered_map>
+#include <map>
 using namespace std;
 
 enum ClassOrInterface {
@@ -20,7 +20,7 @@ enum ModifierType {
     FINAL_TYPE
 };
 
-const unordered_map<ModifierType, string> ModifierMap = {
+const map<ModifierType, string> ModifierMap = {
     {PUBLIC_TYPE, "public"},
     {PROTECTED_TYPE, "protect"},
     {PRIVATE_TYPE, "private"},
@@ -28,7 +28,7 @@ const unordered_map<ModifierType, string> ModifierMap = {
     {DEFAULT_TYPE, "default"},
     {STATIC_TYPE, "static"},
     {STRICTFP_TYPE, "strictfp"},
-    {FINAL_TYPE, "final"},
+    {FINAL_TYPE, "final"}
 };
 
 enum PrimitiveTypeOrNot {
@@ -44,7 +44,7 @@ enum PrimitiveTypeOrNot {
     NONPR_TYPE
 };
 
-const unordered_map<PrimitiveTypeOrNot, string> PrimitiveTypeOrNotMap = {
+const map<PrimitiveTypeOrNot, string> PrimitiveTypeOrNotMap = {
     {BOOLEAN_TYPE, "Z"},
     {CHAR_TYPE, "C"},
     {BYTE_TYPE, "B"},
