@@ -96,6 +96,9 @@ void debugInfo(string *s){
 
 %right ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN AND_ASSIGN OR_ASSIGN XOR_ASSIGN LSHIFT_ASSIGN RSHIFT_ASSIGN URSHIFT_ASSIGN 
 %right BANG TILDE INCRE DECRE
+
+%nonassoc IFX
+%nonassoc ELSE
 /* Define the type of node our nonterminal symbols represent.
    The types refer to the %union declaration above. Ex: when
    we call an ident (defined by union type ident) we are really
@@ -248,12 +251,12 @@ Expression:
 		$$ = new ExprNode(POST_INCRE, dynamic_cast<ExprNode*>($1));
 	}
 	| Expression DECRE %prec INCRE
-	| ADD Expression %prec SINGLES
-	| SUB Expression %prec SINGLES
-	| INCRE Expression %prec SINGLES
-	| DECRE Expression %prec SINGLES
-	| TILDE Expression %prec SINGLES
-	| BANG Expression %prec SINGLES
+	| ADD Expression %prec SINGLES { }
+	| SUB Expression %prec SINGLES { }
+	| INCRE Expression %prec SINGLES { }
+	| DECRE Expression %prec SINGLES { }
+	| TILDE Expression %prec SINGLES { }
+	| BANG Expression %prec SINGLES { }
 	| Expression MUL Expression {
 		$$ = new ExprNode(OP_MUL, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
 	}
@@ -570,7 +573,7 @@ LocalVariableDecl:
 Statement:
 	Block {  }
 	| IF ParExpression Statement ELSE Statement { debugInfo("if () else ()"); }
-	| IF ParExpression Statement {  }
+	| IF ParExpression Statement %prec IFX {  }
 	| FOR LPAREN ForControl RPAREN Statement { debugInfo("for statement"); }
 	| RETURN Expression SEMIC {  }
 	| RETURN SEMIC { debugInfo("return;"); }
