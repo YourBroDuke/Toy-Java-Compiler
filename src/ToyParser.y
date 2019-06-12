@@ -244,7 +244,6 @@ Expression:
 		tmp->methodCallParams = dynamic_cast<MethodCallParamsNode*>($2);
 		$$ = tmp;
 	}
-<<<<<<< HEAD
 	| IDENTIFIER LBRACK Expression RBRACK
 	| IdentifierListWithDot LBRACK Expression RBRACK
 	| IDENTIFIER MethodCallWithoutName
