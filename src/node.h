@@ -403,4 +403,6 @@ public:
     void codeGen(JContext *context);
 };
 
+void IncrStack(JContext* context);
+
 #endif

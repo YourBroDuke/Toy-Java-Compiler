@@ -204,11 +204,16 @@ void MethodDeclNode::codeGen(JContext *context){
     // pop
     this->method = new JMethod;
     this->method->accessSpec = new string();
+
+    // push method
+    context->nodeStack.push(this);
+    context->currentFrame = this;
+    
     for (auto modifier : *parNode->modifiers){
         *this->method->accessSpec += ModifierMap.at(modifier) + " ";
     }
     this->method->methodName = new string(this->nodeName->name);
-    // Refact:
+    // Refactor:
     this->method->descriptor = new JDescriptor;
     this->method->descriptor->params = new vector<string>;
 
@@ -227,6 +232,10 @@ void MethodDeclNode::codeGen(JContext *context){
     this->methodBody->codeGen(context);
     // copy TODO: pointer copy
     this->method->JStmts = this->methodBody->Jstmts;
+
+    // pop method
+    context->nodeStack.pop();
+    context->currentFrame = nullptr;
 
     context->classFile->JMethods = new vector<JMethod*>;
     context->classFile->JMethods->push_back(this->method);
@@ -470,7 +479,7 @@ void ExprNode::codeGen(JContext *context){
             }
         }
         // TODO: generate descriptor
-        argStr += "(Ljava/lang/String;II)V";
+        argStr += "(Ljava/lang/String;)V";
         s->args->push_back(argStr);
 
         this->stmt->push_back(s);
@@ -481,6 +490,8 @@ void ExprNode::codeGen(JContext *context){
             this->primary->stmt->begin(),
             this->primary->stmt->end()
             );
+    } else if (this->type == OP_ADD){
+        
     }
 }
 
@@ -568,13 +579,37 @@ void LiteralNode::Visit() {
 }
 
 void LiteralNode::codeGen(JContext *context){
-    // TODO: complete it
+    // complete
     if (this->type == STRING_LIT){
         JInstructionStmt *s = new JInstructionStmt;
         s->opcode = new string("ldc");
         s->args = new vector<string>;
         s->args->push_back(stringVal);
         this->stmt->push_back(s);
+        IncrStack(context);
+    }else if (this->type == INTEGER_LIT || this->type == FLOAT_LIT || this->type == CHAR_LIT || this->type == BOOL_LIT){
+        JInstructionStmt *s = new JInstructionStmt;
+        s->opcode = new string("ldc");
+        s->args = new vector<string>;
+        if (this->type == FLOAT_LIT)
+            s->args->push_back(to_string(this->floatVal));
+        else
+            s->args->push_back(to_string(this->intVal));
+        this->stmt->push_back(s);
+        IncrStack(context);
+    } else {
+        // NULL_LIT
+        JInstructionStmt *s = new JInstructionStmt;
+        s->opcode = new string("ACONST_NULL");
+        this->stmt->push_back(s);
+        IncrStack(context);
+    }
+}
+
+
+void IncrStack(JContext* context){
+    if (context->currentFrame != nullptr){
+        context->currentFrame->method->stackLimit++;
     }
 }
 

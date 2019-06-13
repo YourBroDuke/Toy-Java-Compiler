@@ -79,6 +79,8 @@ struct JDescriptor{
 
 class JMethod{
     public:
+        int stackLimit;
+        int localLimit;
         string *accessSpec;
         string *methodName;
         JDescriptor *descriptor;
