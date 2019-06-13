@@ -784,14 +784,18 @@ ClassOrInterfaceModifier:
 	;
 
 Literal:
-	DECIMAL_LITERAL { $$ = new LiteralNode(INTEGER_LIT, (int64_t)atoi($1->c_str())); }
+	DECIMAL_LITERAL {
+		$$ = new LiteralNode(INTEGER_LIT, (int64_t)atoi($1->c_str()));
+	}
 	| HEX_LITERAL { }
 	| OCT_LITERAL { }
 	| BINARY_LITERAL { }
 	| FLOAT_LITERAL { }
 	| HEXFLOAT_LITERAL { }
 	| CHAR_LITERAL { }
-	| STRING_LITERAL { $$ = new LiteralNode(STRING_LIT, *$1); }
+	| STRING_LITERAL {
+		$$ = new LiteralNode(STRING_LIT, *$1);
+	}
 	| TRUE_LITERAL { }
 	| FALSE_LITERAL { }
 	| NULL_LITERAL { }
