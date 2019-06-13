@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include "SymbolTable/SymbolTable.h"
 extern int yylex();
 extern char *yytext;
 void yyerror(const char *s) {
@@ -14,7 +15,9 @@ void yyerror(const char *s) {
 }
 using namespace std;
 FileNode *rootNode = new FileNode();
-
+SymbolTable *symbolTable = new SymbolTable();
+// AddVarNode()
+// AddMethodNode()
 #define DEBUG
 
 void debugInfo(const char* s){
@@ -26,6 +29,9 @@ void debugInfo(const char* s){
 void debugInfo(string *s){
 	debugInfo(s->c_str());
 }
+
+
+
 %}
 
 /* Represents the many different ways we can access our data */
@@ -93,7 +99,6 @@ void debugInfo(string *s){
 %left MUL DIV MOD
 %left SINGLES
 %left LPAREN LBRACK DOT
-
 %right ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN AND_ASSIGN OR_ASSIGN XOR_ASSIGN LSHIFT_ASSIGN RSHIFT_ASSIGN URSHIFT_ASSIGN 
 %right BANG TILDE INCRE DECRE
 
@@ -250,56 +255,122 @@ Expression:
 	| Expression INCRE %prec INCRE {
 		$$ = new ExprNode(POST_INCRE, dynamic_cast<ExprNode*>($1));
 	}
-	| Expression DECRE %prec INCRE
-	| ADD Expression %prec SINGLES { }
-	| SUB Expression %prec SINGLES { }
-	| INCRE Expression %prec SINGLES { }
-	| DECRE Expression %prec SINGLES { }
-	| TILDE Expression %prec SINGLES { }
-	| BANG Expression %prec SINGLES { }
+	| Expression DECRE %prec INCRE {
+		$$ = new ExprNode(POST_DECRE, dynamic_cast<ExprNode*>($1));
+	}
+	| ADD Expression %prec SINGLES {
+		$$ = new ExprNode(POS_EXPR, dynamic_cast<ExprNode*>($2));
+	}
+	| SUB Expression %prec SINGLES {
+		$$ = new ExprNode(NEG_EXPR, dynamic_cast<ExprNode*>($2));
+	}
+	| INCRE Expression %prec SINGLES {
+		$$ = new ExprNode(PRE_INCRE, dynamic_cast<ExprNode*>($2));
+	}
+	| DECRE Expression %prec SINGLES {
+		$$ = new ExprNode(PRE_DECRE, dynamic_cast<ExprNode*>($2));
+	}
+	| TILDE Expression %prec SINGLES {
+		$$ = new ExprNode(TILDE_EXPR, dynamic_cast<ExprNode*>($2));
+	}
+	| BANG Expression %prec SINGLES {
+		$$ = new ExprNode(BANG_EXPR, dynamic_cast<ExprNode*>($2));
+	}
 	| Expression MUL Expression {
 		$$ = new ExprNode(OP_MUL, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
 	}
-	| Expression DIV Expression
-	| Expression MOD Expression
-	| Expression ADD Expression { debugInfo("add up"); }
-	| Expression SUB Expression
-	| Expression LSHIFT Expression
-	| Expression RSHIFT Expression
-	| Expression URSHIFT Expression
-	| Expression LT Expression { debugInfo("lessthan expression"); }
-	| Expression GT Expression
-	| Expression LTOE Expression
-	| Expression GTOE Expression
-	| Expression EQUAL Expression
-	| Expression NEQUAL Expression
-	| Expression BITAND Expression
-	| Expression CARET Expression
-	| Expression BITOR Expression
-	| Expression AND Expression
-	| Expression OR Expression
-	| Expression AssignOperators Expression %prec ASSIGNS
+	| Expression DIV Expression {
+		$$ = new ExprNode(OP_DIV, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression MOD Expression {
+		$$ = new ExprNode(OP_MOD, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression ADD Expression {
+		$$ = new ExprNode(OP_ADD, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression SUB Expression {
+		$$ = new ExprNode(OP_SUB, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression LSHIFT Expression {
+		$$ = new ExprNode(OP_LSHIFT, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression RSHIFT Expression {
+		$$ = new ExprNode(OP_RSHIFT, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression URSHIFT Expression {
+		$$ = new ExprNode(OP_URSHIFT, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression LT Expression {
+		$$ = new ExprNode(OP_LT, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression GT Expression {
+		$$ = new ExprNode(OP_GT, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression LTOE Expression {
+		$$ = new ExprNode(OP_LTOE, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression GTOE Expression {
+		$$ = new ExprNode(OP_GTOE, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression EQUAL Expression {
+		$$ = new ExprNode(OP_EQ, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression NEQUAL Expression {
+		$$ = new ExprNode(OP_NEQ, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression BITAND Expression {
+		$$ = new ExprNode(OP_BAND, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression CARET Expression {
+		$$ = new ExprNode(OP_CARET, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression BITOR Expression {
+		$$ = new ExprNode(OP_BOR, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression AND Expression {
+		$$ = new ExprNode(OP_AND, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression OR Expression {
+		$$ = new ExprNode(OP_OR, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression ASSIGN Expression {
+		$$ = new ExprNode(OP_ASN, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression ADD_ASSIGN Expression {
+		$$ = new ExprNode(OP_ADD_ASN, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression SUB_ASSIGN Expression {
+		$$ = new ExprNode(OP_SUB_ASN, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression MUL_ASSIGN Expression {
+		$$ = new ExprNode(OP_MUL_ASN, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression DIV_ASSIGN Expression {
+		$$ = new ExprNode(OP_DIV_ASN, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression MOD_ASSIGN Expression {
+		$$ = new ExprNode(OP_MOD_ASN, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression AND_ASSIGN Expression {
+		$$ = new ExprNode(OP_AND_ASN, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression OR_ASSIGN Expression {
+		$$ = new ExprNode(OP_OR_ASN, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression XOR_ASSIGN Expression {
+		$$ = new ExprNode(OP_XOR_ASN, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression RSHIFT_ASSIGN Expression {
+		$$ = new ExprNode(OP_RSHIFT_ASN, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression URSHIFT_ASSIGN Expression {
+		$$ = new ExprNode(OP_URSHIFT_ASN, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| Expression LSHIFT_ASSIGN Expression {
+		$$ = new ExprNode(OP_LSHIFT_ASN, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
 	;
 
-AssignOperators:
-	ASSIGN
-	| ADD_ASSIGN
-	| SUB_ASSIGN
-	| MUL_ASSIGN
-	| DIV_ASSIGN
-	| MOD_ASSIGN
-	| AND_ASSIGN
-	| OR_ASSIGN
-	| XOR_ASSIGN
-	| RSHIFT_ASSIGN
-	| URSHIFT_ASSIGN
-	| LSHIFT_ASSIGN
-	;
-
-
-ParExpression:
-	LPAREN Expression RPAREN
-	;
 
 ExpressionList:
 	Expression {
@@ -572,8 +643,8 @@ LocalVariableDecl:
  /* TODO: finish (Statement) */
 Statement:
 	Block {  }
-	| IF ParExpression Statement ELSE Statement { debugInfo("if () else ()"); }
-	| IF ParExpression Statement %prec IFX {  }
+	| IF LPAREN Expression RPAREN Statement ELSE Statement { debugInfo("if () else ()"); }
+	| IF LPAREN Expression RPAREN Statement %prec IFX {  }
 	| FOR LPAREN ForControl RPAREN Statement { debugInfo("for statement"); }
 	| RETURN Expression SEMIC {  }
 	| RETURN SEMIC { debugInfo("return;"); }
@@ -666,7 +737,7 @@ LRBrackList:
 #include "codeGen/Generator.hpp"
 
 int main() {
-	#define YYDEBUG 1
+#define YYDEBUG 1
 #ifdef YYDEBUG
   yydebug = 1;
 #endif
@@ -677,5 +748,6 @@ int main() {
 	JasminFileGenerator *g = new JasminFileGenerator(context);
 	debugInfo("start generating...");
 	g->Generate();
+	cout << endl << endl << "The Target code:" << endl << endl;
 	g->WriteTo(cout);
 }

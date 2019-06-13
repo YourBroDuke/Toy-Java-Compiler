@@ -1,10 +1,16 @@
 package org.gilmour.test;
 
-public class hello {
+public class test {
 	public static void main(String[] args) {
-		int a = 1;
-		int b = a + 1 * 2;
-		System.out.println("Hello World : ");
-		System.out.println(b);
+		int a, b;
+		a = 1;
+		b = 2;
+		int c = AddTwoInt(a, b);
+		System.out.println(c);
+	}
+
+	private static int AddTwoInt(int a, int b) {
+		int c = a + b;
+		return c;
 	}
 }
