@@ -188,7 +188,7 @@ public:
     JMethod *method;
 };
 
-class TypeTypeNode : public Node
+class vector<TypeTypeNode*> *returnType, TypeTypeNode : public Node
 {
 public:
     PrimitiveTypeOrNot type;

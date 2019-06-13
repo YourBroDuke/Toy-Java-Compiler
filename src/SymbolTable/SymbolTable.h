@@ -9,24 +9,32 @@ using namespace std;
 
 class VarNode {
 public:
-    int varId;//VarId = HashVar(VaribleNode) Unique identifier
     string Name;
-    TypeTypeNode* varType;
+    TypeTypeNode *varType;
+    vector<ModifierType> *varModifierType;
     int scopeLv;
 
-    VarNode(string Name, TypeTypeNode* varType, int ScopeLv);
+    VarNode(string Name, TypeTypeNode* varType, vector<ModifierType> *varModifierType, int ScopeLv);
     //Insert a Var and its info. into the table, including its name
     //type, dimension of array(0 for not an array), scope level
 };
 
 class MethodNode {
 public:
-    int methodId;//MethodId = HashVar(MethodNode) Unique identifier
     string methodName;
-    vector<TypeTypeNode*> Params;
-    TypeTypeNode* returnType;
+    vector<vector<TypeTypeNode*>*> ParamsList;
+    vector<TypeTypeNode*> *returnTypeList;
+    vector<vector<ModifierType>*> *methodModifierTypesList;
 
-    MethodNode(string MethodName, TypeTypeNode* returnType);
+    MethodNode(string MethodName, vector<FormalParamNode*> *Params, TypeTypeNode *returnType);
+};
+
+class ReturnMethodNode {
+public:
+    string methodName;
+    vector<TypeTypeNode*> *ParamsList;
+    TypeTypeNode *returnTypeList;
+    vector<ModifierType> *methodModifierTypesList;
 };
 
 class SymbolTable {
@@ -43,10 +51,11 @@ public:
         CurrentScope++;
     }
 
-    void PopScope(int ScopeLv);
-    
-    void PushMethod(string MethodName, TypeTypeNode* returnType);
+    void PopScope();
 
-    MethodNode SearchMethod(string MethodName);
+    int AddVarNode(vector<ModifierType> *varModifierType, string Name, TypeTypeNode* varType);
+    int AddMethodNode(vector<ModifierType> *methodModifiers, string Name, vector<FormalParamNode*> *Params, TypeTypeNode* returnType);
+
+    MethodNode SearchMethod(string MethodName, vector<TypeTypeNode*> *paramTypes);
     VarNode SearchVar(string VarName);
 };
