@@ -184,8 +184,6 @@ void MemberDeclNode::Visit() {
 }
 
 MethodDeclNode::MethodDeclNode(TypeTypeNode *type, const string& name, BlockNode *block) {
-    cout << endl << endl << endl << endl;
-    cout << "name = " << name << endl;
     this->typeInfo = type;
     this->nodeName = new IdentifierNode(name);
     this->methodBody = block;
@@ -337,28 +335,43 @@ Statement::Statement(){
     this->stmt = new vector<JStmt*>;
 }
 
-void Statement::Visit(){
 
-}
-
-BlockStatementNode::BlockStatementNode(StatementNode *stat) {
-    this->stat = stat;
+BlockStatementNode::BlockStatementNode(int isVarDecl, Statement *stat) {
+    this->isVarDecl = isVarDecl;
+    this->statOrdecl = stat;
 }
 
 void BlockStatementNode::Visit() {
-    this->stat->Visit();
+    this->statOrdecl->Visit();
 }
 
 void BlockStatementNode::codeGen(JContext *context){
     debugInfo("codeGen enter BlockStatementNode");
-    this->stat->codeGen(context);
-    this->stmt = this->stat->stmt;
+    this->statOrdecl->codeGen(context);
+    this->stmt = this->statOrdecl->stmt;
     debugInfo("codeGen exit BlockStatementNode");
+}
+
+StatementNode::StatementNode(StatementType) {
+    this->type = type;
 }
 
 StatementNode::StatementNode(StatementType type, Statement *stat) {
     this->type = type;
-    this->stat = stat;
+    this->stat1 = stat;
+}
+
+StatementNode::StatementNode(StatementType type, Statement *stat1, Statement *stat2) {
+    this->type = type;
+    this->stat1 = stat1;
+    this->stat2 = stat2;
+}
+
+StatementNode::StatementNode(StatementType type, Statement *stat1, Statement *stat2, Statement *stat3) {
+    this->type = type;
+    this->stat1 = stat1;
+    this->stat2 = stat2;
+    this->stat3 = stat3;
 }
 
 void StatementNode::printType() {
@@ -369,7 +382,7 @@ void StatementNode::printType() {
 
 void StatementNode::Visit() {
     this->printType();
-    this->stat->Visit();
+    this->stat1->Visit();
 }
 
 void StatementNode::codeGen(JContext *context){
@@ -377,8 +390,8 @@ void StatementNode::codeGen(JContext *context){
     // TODO: translate all type
     context->nodeStack.push(this);
     //delegate to child node
-    this->stat->codeGen(context);
-    this->stmt = this->stat->stmt;
+    this->stat1->codeGen(context);
+    this->stmt = this->stat1->stmt;
     context->nodeStack.pop();
     debugInfo("codeGen exit StatementNode");
 }
@@ -540,6 +553,17 @@ LiteralNode::LiteralNode(LiteralType type, const string& val) {
 void LiteralNode::Visit() {
     if (this->type == STRING_LIT) {
         cout << this->stringVal << endl;
+    } else if (this->type == INTEGER_LIT) {
+        cout << this->intVal << endl;
+    } else if (this->type == FLOAT_LIT) {
+        cout << this->floatVal << endl;
+    } else if (this->type == CHAR_LIT) {
+        cout << static_cast<char>(this->intVal) << endl;
+    } else if (this->type == BOOL_LIT) {
+        string boolVal = this->intVal?"true":"false";
+        cout << boolVal << endl;
+    } else {
+        cout << "NULL" << endl;
     }
 }
 
@@ -552,4 +576,65 @@ void LiteralNode::codeGen(JContext *context){
         s->args->push_back(stringVal);
         this->stmt->push_back(s);
     }
+}
+
+LocalVariableDeclNode::LocalVariableDeclNode(int isFinal, TypeTypeNode *type) {
+    this->isFinal = isFinal;
+    this->type = type;
+}
+
+void LocalVariableDeclNode::Visit() {
+    if (this->isFinal) cout << "final variable" << endl;
+    this->type->Visit();
+    for (auto node : *this->decls) {
+        node->Visit();
+    }
+}
+
+void LocalVariableDeclNode::codeGen(JContext *context) {
+
+}
+
+VariableDeclaratorNode::VariableDeclaratorNode(VariableDeclaratorIdNode *idNode) {
+    this->idNode = idNode;
+    this->initializer = NULL;
+}
+
+VariableDeclaratorNode::VariableDeclaratorNode(VariableDeclaratorIdNode *idNode, VariableInitializerNode *init) {
+    this->idNode = idNode;
+    this->initializer = init;
+}
+
+void VariableDeclaratorNode::Visit() {
+    this->idNode->Visit();
+    if (this->initializer) this->initializer->Visit();
+}
+
+void VariableDeclaratorNode::codeGen(JContext *context) {
+
+}
+
+VariableInitializerNode::VariableInitializerNode(int isSingleExpr, ExprNode *expr) {
+    this->isSingleExpr = isSingleExpr;
+    this->expr = expr;
+    this->array = NULL;
+}
+
+VariableInitializerNode::VariableInitializerNode(int isSingleExpr, vector<VariableInitializerNode*> *array) {
+    this->isSingleExpr = isSingleExpr;
+    this->expr = NULL;
+    this->array = array;
+}
+
+void VariableInitializerNode::Visit() {
+    if (this->isSingleExpr) this->expr->Visit();
+    else {
+        for (auto node : *this->array) {
+            node->Visit();
+        }
+    }
+}
+
+void VariableInitializerNode::codeGen(JContext *context) {
+
 }

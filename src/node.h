@@ -37,6 +37,8 @@ class MethodCallParamsNode;
 class LiteralNode;
 class ClassBodyNode;
 class BlockStatementNode;
+class VariableInitializerNode;
+class VariableDeclaratorNode;
 
 class FileNode : public Node
 {
@@ -188,7 +190,7 @@ public:
     JMethod *method;
 };
 
-class vector<TypeTypeNode*> *returnType, TypeTypeNode : public Node
+class TypeTypeNode : public Node
 {
 public:
     PrimitiveTypeOrNot type;
@@ -249,35 +251,41 @@ public:
     void codeGen(JContext *context);
 };
 
-class Statement: public Node{
+class Statement: public Node {
     public:
         vector<JStmt*> *stmt;
         Statement();
-    void Visit();
     void codeGen(JContext *context);
 };
 
 class BlockStatementNode : public Statement
 {
 public:
-    StatementNode *stat;
+    int isVarDecl;
+    // If isVarDecl --> LocalVariableDeclNode*
+    // else         --> StatementNode*
+    Statement *statOrdecl;
 
     void Visit();
-    BlockStatementNode(StatementNode *stat);
+    BlockStatementNode(int isVarDecl, Statement *stat);
     ~BlockStatementNode();
 
 public:
     void codeGen(JContext* context);
 };
 
-class StatementNode :public Statement
+class StatementNode : public Statement
 {
 public:
     StatementType type;
-    Statement *stat;
+    Statement *stat1, *stat2, *stat3;
+    Node *forControl;
 
     void Visit();
+    StatementNode(StatementType type);
     StatementNode(StatementType type, Statement *stat);
+    StatementNode(StatementType type, Statement *stat1, Statement *stat2);
+    StatementNode(StatementType type, Statement *stat1, Statement *stat2, Statement *stat3);
     ~StatementNode();
 private:
     void printType();
@@ -352,6 +360,46 @@ public:
     ~LiteralNode();
 
 public:
+    void codeGen(JContext *context);
+};
+
+class LocalVariableDeclNode : public Statement
+{
+public:
+    int isFinal;
+    TypeTypeNode *type;
+    vector<VariableDeclaratorNode*> *decls;
+    
+    LocalVariableDeclNode(int isFinal, TypeTypeNode *type);
+    ~LocalVariableDeclNode();
+    void Visit();
+    void codeGen(JContext *context);
+};
+
+class VariableDeclaratorNode : public Node
+{
+public:
+    VariableDeclaratorIdNode *idNode;
+    VariableInitializerNode *initializer;
+
+    VariableDeclaratorNode(VariableDeclaratorIdNode *idNode);
+    VariableDeclaratorNode(VariableDeclaratorIdNode *idNode, VariableInitializerNode *init);
+    ~VariableDeclaratorNode();
+    void codeGen(JContext *context);
+    void Visit();
+};
+
+class VariableInitializerNode : public Node
+{
+public:
+    int isSingleExpr;
+    ExprNode *expr;
+    vector<VariableInitializerNode*> *array;
+
+    VariableInitializerNode(int isSingleExpr, ExprNode *expr);
+    VariableInitializerNode(int isSingleExpr, vector<VariableInitializerNode*> *array);
+    ~VariableInitializerNode();
+    void Visit();
     void codeGen(JContext *context);
 };
 

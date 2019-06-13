@@ -39,15 +39,19 @@ void debugInfo(string *s){
 	std::string *string;
 	int token;
 	Node *node;
+	ModifierType memberModifierType;
+	PrimitiveTypeOrNot primitiveType;
+	LocalVarType localVarType;
 	vector<ImportNode*> *importNodes;
 	vector<TypeDeclNode*> *typeDeclNodes;
 	vector<MemberDeclNode*> *memberDecls;
 	vector<ModifierType> *memberModifiers;
-	ModifierType memberModifierType;
 	vector<IdentifierNode*> *ids;
 	vector<FormalParamNode*> *formalParamNodes;
 	vector<BlockStatementNode*> *blockStatementNodes;
 	vector<ExprNode*> *exprNodes;
+	vector<VariableInitializerNode*> *arrayInitializer;
+	vector<VariableDeclaratorNode*> *varDecls;
 }
 
 /* Define our terminal symbols (tokens). This should
@@ -74,7 +78,7 @@ void debugInfo(string *s){
 %type <node> CompilationUnit PackageDecl  TypeDecl MemberDecl TypeType MethodBody
 %type <node> ClassDecl QualifiedName ClassBody  MethodDecl Literal ImportDecl
 %type <node> VariableDeclaratorId Block BlockStatement Statement Expression Primary
-%type <node> MethodCallWithoutName FormalParam
+%type <node> MethodCallWithoutName FormalParam LocalVariableDecl VariableDeclarator VariableInitializer
 %type <token> LRBrackList
 %type <importNodes> ImportDeclListOptional
 %type <typeDeclNodes> TypeDeclListOptional
@@ -83,8 +87,12 @@ void debugInfo(string *s){
 %type <memberDecls> ClassBodyDeclList
 %type <formalParamNodes> FormalParams FormalParameterWithCommaList
 %type <blockStatementNodes> BlockStatementList
+%type <arrayInitializer> ArrayInitializer VariableInitializerListWithComma
 %type <ids> IdentifierListWithDot
 %type <exprNodes> ExpressionList
+%type <primitiveType> PrimitiveType
+%type <localVarType> VariableModifier VariableModifierList
+%type <varDecls> VariableDeclarators
 
 %left ASSIGNS
 %left OR
@@ -176,7 +184,7 @@ TypeDecl:
 
  /* done */
 ClassDecl:
-	CLASS IDENTIFIER ClassBody { 
+	CLASS IDENTIFIER ClassBody {
 		$$ = new ClassDeclNode(*$2, dynamic_cast<ClassBodyNode*>($3));
 	}
 	| CLASS IDENTIFIER IMPLEMENTS TypeList ClassBody {
@@ -251,7 +259,13 @@ Expression:
 	}
 	| IDENTIFIER LBRACK Expression RBRACK { }
 	| IdentifierListWithDot LBRACK Expression RBRACK { }
-	| IDENTIFIER MethodCallWithoutName { }
+	| IDENTIFIER MethodCallWithoutName {
+		ExprNode *tmp = new ExprNode(IDEN_METHOD);
+		tmp->ids = new vector<IdentifierNode*>;
+		tmp->ids->push_back(new IdentifierNode(*$1));
+		tmp->methodCallParams = dynamic_cast<MethodCallParamsNode*>($2);
+		$$ = tmp;
+	}
 	| Expression INCRE %prec INCRE {
 		$$ = new ExprNode(POST_INCRE, dynamic_cast<ExprNode*>($1));
 	}
@@ -388,12 +402,14 @@ Primary:
 	| THIS {  }
 	| SUPER {  }
 	| Literal { $$ = new PrimaryNode(PRIMARY_LITERAL, dynamic_cast<LiteralNode*>$1); }
-	| IDENTIFIER { debugInfo($1); }
+	| IDENTIFIER { $$ = new PrimaryNode(PRIMARY_IDEN, *$1); }
 	;
 
 
 VariableModifier:
-	FINAL
+	FINAL {
+		$$ = FINAL_TYPE_L;
+	}
 	;
 
 /* We use rule this even for void methods which cannot have [] after parameters.
@@ -503,19 +519,19 @@ QualifiedNameList:
 	;
 
 VariableModifierList:
-	VariableModifier
-	| VariableModifierList VariableModifier
+	VariableModifier { $$ = $1; }
+	| VariableModifierList VariableModifier { $$ = $2; }
 	;
 
 PrimitiveType:
-	BOOLEAN
-	| CHAR
-	| BYTE
-	| SHORT
-	| INT { debugInfo("int"); }
-	| LONG
-	| FLOAT
-	| DOUBLE
+	BOOLEAN { $$ = BOOLEAN_TYPE; }
+	| CHAR { $$ = CHAR_TYPE; }
+	| BYTE { $$ = BYTE_TYPE; }
+	| SHORT { $$ = SHORT_TYPE; }
+	| INT { $$ = INT_TYPE; }
+	| LONG { $$ = LONG_TYPE; }
+	| FLOAT { $$ = FLOAT_TYPE; }
+	| DOUBLE { $$ = DOUBLE_TYPE; }
 	;
 
 IdentifierListWithDot:
@@ -532,7 +548,12 @@ IdentifierListWithDot:
 
 
 TypeType:
-	IdentifierListWithDot { }
+	IdentifierListWithDot {
+		TypeTypeNode* tmp = new TypeTypeNode(NONPR_TYPE);
+		tmp->typeInfo = $1;
+		tmp->arrayDim = 0;
+		$$ = tmp;
+	}
 	| IDENTIFIER {
 		TypeTypeNode* tmp = new TypeTypeNode(NONPR_TYPE);
 		tmp->typeInfo = new vector<IdentifierNode*>;
@@ -547,8 +568,18 @@ TypeType:
 		tmp->arrayDim = $2;
 		$$ = tmp;
 	}
-	| PrimitiveType { }
-	| PrimitiveType LRBrackList { }
+	| PrimitiveType {
+		TypeTypeNode *tmp = new TypeTypeNode($1);
+		tmp->typeInfo = new vector<IdentifierNode*>;
+		tmp->arrayDim = 0;
+		$$ = tmp;
+	}
+	| PrimitiveType LRBrackList {
+		TypeTypeNode *tmp = new TypeTypeNode($1);
+		tmp->typeInfo = new vector<IdentifierNode*>;
+		tmp->arrayDim = $2;
+		$$ = tmp;
+	}
 	;
 
 TypeTypeOrVoid:
@@ -569,13 +600,23 @@ TypeList:
 
 
 VariableDeclarators:
-	VariableDeclarator
-	| VariableDeclarators COMMA VariableDeclarator
+	VariableDeclarator {
+		$$ = new vector<VariableDeclaratorNode*>;
+		$$->push_back(dynamic_cast<VariableDeclaratorNode*>($1));
+	}
+	| VariableDeclarators COMMA VariableDeclarator {
+		$1->push_back(dynamic_cast<VariableDeclaratorNode*>($3));
+		$$ = $1;
+	}
 	;
 
 VariableDeclarator:
-	VariableDeclaratorId
-	| VariableDeclaratorId ASSIGN VariableInitializer
+	VariableDeclaratorId {
+		$$ = new VariableDeclaratorNode(dynamic_cast<VariableDeclaratorIdNode*>($1));
+	}
+	| VariableDeclaratorId ASSIGN VariableInitializer {
+		$$ = new VariableDeclaratorNode(dynamic_cast<VariableDeclaratorIdNode*>($1), dynamic_cast<VariableInitializerNode*>($3));
+	}
 	;
 
 VariableDeclaratorId:
@@ -585,18 +626,34 @@ VariableDeclaratorId:
 	;
 
 VariableInitializer:
-	ArrayInitializer
-	| Expression
+	ArrayInitializer {
+		$$ = new VariableInitializerNode(0, $1); // it is not single expr but an array
+	}
+	| Expression {
+		$$ = new VariableInitializerNode(1, dynamic_cast<ExprNode*>($1)); // it is a single expr
+	}
 	;
 VariableInitializerListWithComma:
-	VariableInitializer
-	| VariableInitializerListWithComma COMMA VariableInitializer
+	VariableInitializer {
+		$$ = new vector<VariableInitializerNode*>;
+		$$->push_back(dynamic_cast<VariableInitializerNode*>($1));
+	}
+	| VariableInitializerListWithComma COMMA VariableInitializer {
+		$1->push_back(dynamic_cast<VariableInitializerNode*>($3));
+		$$ = $1;
+	}
 	;
 
 ArrayInitializer:
-	LBRACE VariableInitializerListWithComma COMMA RBRACE
-	| LBRACE VariableInitializerListWithComma RBRACE
-	| LBRACE RBRACE
+	LBRACE VariableInitializerListWithComma COMMA RBRACE {
+		$$ = $2;
+	}
+	| LBRACE VariableInitializerListWithComma RBRACE {
+		$$ = $2;
+	}
+	| LBRACE RBRACE {
+		$$ = new vector<VariableInitializerNode*>;
+	}
 	;
 
  /* Statements / Blocks */
@@ -627,16 +684,25 @@ BlockStatementList:
 
 BlockStatement:
 	LocalVariableDecl SEMIC {
-		$$ = NULL;
+		cout << "+\n+\n+\n" << $1 << "\n-\n-\n-\n";
+		$$ = new BlockStatementNode(1, dynamic_cast<Statement*>($1));
 	}
 	| Statement {
-		$$ = new BlockStatementNode(dynamic_cast<StatementNode*>($1));
+		$$ = new BlockStatementNode(0, dynamic_cast<Statement*>($1));	// NOT local variable decl
 	}
 	;
 
 LocalVariableDecl:
-	VariableModifierList TypeType VariableDeclarators
-	| TypeType VariableDeclarators
+	VariableModifierList TypeType VariableDeclarators {
+		$$ = new LocalVariableDeclNode(1, dynamic_cast<TypeTypeNode*>($2)); // 1 - FINAL
+		dynamic_cast<LocalVariableDeclNode*>($$)->decls = $3;
+		cout << "-\n-\n-\n" << $$ << "\n-\n-\n-\n";
+	}
+	| TypeType VariableDeclarators {
+		$$ = new LocalVariableDeclNode(0, dynamic_cast<TypeTypeNode*>($1));	// 0 - NOT FINAL
+		dynamic_cast<LocalVariableDeclNode*>($$)->decls = $2;
+		cout << "-\n-\n-\n" << $$ << "\n-\n-\n-\n";
+	}
 	;
 
 
@@ -646,8 +712,12 @@ Statement:
 	| IF LPAREN Expression RPAREN Statement ELSE Statement { debugInfo("if () else ()"); }
 	| IF LPAREN Expression RPAREN Statement %prec IFX {  }
 	| FOR LPAREN ForControl RPAREN Statement { debugInfo("for statement"); }
-	| RETURN Expression SEMIC {  }
-	| RETURN SEMIC { debugInfo("return;"); }
+	| RETURN Expression SEMIC {
+		$$ = new StatementNode(RETURN_TYPE, dynamic_cast<ExprNode*>($2));
+	}
+	| RETURN SEMIC {
+		$$ = new StatementNode(RETURN_NONE_TYPE);
+	}
 	| SEMIC {  }
 	| Expression SEMIC {
 		$$ = new StatementNode(EXPR_TYPE, dynamic_cast<ExprNode*>($1));
@@ -670,7 +740,10 @@ MemberDecl:
 MethodDecl:
 	TypeType IDENTIFIER FormalParams THROWS QualifiedNameList MethodBody { }
 	| VOID IDENTIFIER FormalParams THROWS QualifiedNameList MethodBody { }
-	| TypeType IDENTIFIER FormalParams MethodBody { debugInfo("Reduced MethodDecl"); }
+	| TypeType IDENTIFIER FormalParams MethodBody {
+		$$ = new MethodDeclNode(dynamic_cast<TypeTypeNode*>($1), *$2, dynamic_cast<BlockNode*>($4));
+		dynamic_cast<MethodDeclNode*>($$)->params = $3;
+	}
 	| VOID IDENTIFIER FormalParams MethodBody {
 		$$ = new MethodDeclNode(new TypeTypeNode(VOID_TYPE), *$2, dynamic_cast<BlockNode*>($4));
 		dynamic_cast<MethodDeclNode*>($$)->params = $3;
@@ -711,7 +784,7 @@ ClassOrInterfaceModifier:
 	;
 
 Literal:
-	DECIMAL_LITERAL { }
+	DECIMAL_LITERAL { $$ = new LiteralNode(INTEGER_LIT, (int64_t)atoi($1->c_str())); }
 	| HEX_LITERAL { }
 	| OCT_LITERAL { }
 	| BINARY_LITERAL { }
@@ -744,10 +817,10 @@ int main() {
 	cout << yydebug << endl;
 	yyparse();
 	rootNode->Visit();
-	JContext *context = new JContext(rootNode);
-	JasminFileGenerator *g = new JasminFileGenerator(context);
-	debugInfo("start generating...");
-	g->Generate();
-	cout << endl << endl << "The Target code:" << endl << endl;
-	g->WriteTo(cout);
+	// JContext *context = new JContext(rootNode);
+	// JasminFileGenerator *g = new JasminFileGenerator(context);
+	// debugInfo("start generating...");
+	// g->Generate();
+	// cout << endl << endl << "The Target code:" << endl << endl;
+	// g->WriteTo(cout);
 }

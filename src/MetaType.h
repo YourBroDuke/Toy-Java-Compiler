@@ -130,4 +130,14 @@ enum LiteralType {
     BOOL_LIT,
     NULL_LIT
 };
+
+enum LocalVarType {
+    FINAL_TYPE_L,
+    NOT_FINAL_TYPE
+};
+
+enum InitializerType {
+    EXPR_INIT,
+    ARRAY_INIT
+};
 #endif
