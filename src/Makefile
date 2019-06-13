@@ -36,4 +36,4 @@ clean:
 
 .PHONY: test
 test:$(target)
-	cat testCases/hello.txt | ./lavac
+	cat testCases/op.txt | ./lavac

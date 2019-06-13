@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include "SymbolTable/SymbolTable.h"
 extern int yylex();
 extern char *yytext;
 void yyerror(const char *s) {
@@ -14,7 +15,9 @@ void yyerror(const char *s) {
 }
 using namespace std;
 FileNode *rootNode = new FileNode();
-
+SymbolTable *symbolTable = new SymbolTable();
+// AddVarNode()
+// AddMethodNode()
 #define DEBUG
 
 void debugInfo(const char* s){
@@ -26,6 +29,9 @@ void debugInfo(const char* s){
 void debugInfo(string *s){
 	debugInfo(s->c_str());
 }
+
+
+
 %}
 
 /* Represents the many different ways we can access our data */
@@ -731,7 +737,7 @@ LRBrackList:
 #include "codeGen/Generator.hpp"
 
 int main() {
-	#define YYDEBUG 1
+#define YYDEBUG 1
 #ifdef YYDEBUG
   yydebug = 1;
 #endif
@@ -742,5 +748,6 @@ int main() {
 	JasminFileGenerator *g = new JasminFileGenerator(context);
 	debugInfo("start generating...");
 	g->Generate();
+	cout << endl << endl << "The Target code:" << endl << endl;
 	g->WriteTo(cout);
 }
