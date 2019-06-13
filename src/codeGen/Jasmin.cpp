@@ -35,6 +35,8 @@ JasminHeader::~JasminHeader() {
 }
 
 JMethod::JMethod() {
+    localLimit = 0;
+    stackLimit = 0;
     accessSpec = nullptr;
     methodName = nullptr;
     descriptor = nullptr;
@@ -90,8 +92,11 @@ string JMethod::toString(){
     ret += *accessSpec + " ";
     ret += *methodName;
     ret += descriptor->toString() + "\n";
+    ret += "\t.limit stack " + to_string(this->stackLimit) + "\n";
+    if (this->localLimit != 0)
+        ret += "\t.limit locals " + to_string(this->localLimit) + "\n";
     for (auto stmt : *JStmts){
-        ret += stmt->toString();
+        ret += '\t' + stmt->toString();
     }
     return ret + "return\n" + ".end method\n";
 }
