@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include "../node.h"
+#include "../MetaType.h"
 
 #define MaxSize 1000
 
@@ -14,7 +15,7 @@ public:
     vector<ModifierType> *varModifierType;
     int scopeLv;
 
-    VarNode(string Name, TypeTypeNode* varType, vector<ModifierType> *varModifierType, int ScopeLv);
+    VarNode(vector<ModifierType> *varModifierType, string Name, TypeTypeNode* varType, int ScopeLv);
     //Insert a Var and its info. into the table, including its name
     //type, dimension of array(0 for not an array), scope level
 };
@@ -24,9 +25,9 @@ public:
     string methodName;
     vector<vector<TypeTypeNode*>*> ParamsList;
     vector<TypeTypeNode*> *returnTypeList;
-    vector<vector<ModifierType>*> *methodModifierTypesList;
+    vector< vector<ModifierType> > methodModifierTypesList;
 
-    MethodNode(string MethodName, vector<FormalParamNode*> *Params, TypeTypeNode *returnType);
+    MethodNode(vector<ModifierType> *methodModifierTypesList, string MethodName, vector<FormalParamNode*> *Params, TypeTypeNode *returnType);
 };
 
 class ReturnMethodNode {
@@ -34,7 +35,8 @@ public:
     string methodName;
     vector<TypeTypeNode*> *ParamsList;
     TypeTypeNode *returnTypeList;
-    vector<ModifierType> *methodModifierTypesList;
+    vector<ModifierType> methodModifierTypesList;
+    int result;
 };
 
 class SymbolTable {
@@ -44,8 +46,8 @@ public:
     int HashVar(VarNode);
     int HashMethod(MethodNode);
 
-    VarNode* VarTable[MaxSize];
-    MethodNode* MethodTable[MaxSize];
+    VarNode *varTableHead;
+    MethodNode *methodTableHead;
 
     void PushScope(){
         CurrentScope++;

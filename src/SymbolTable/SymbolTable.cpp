@@ -1,0 +1,143 @@
+#include <iostream>
+#include "SymbolTable.h"
+#include <string>
+#include <stdlib.h>
+#include "../MetaType.h"
+
+using namespace std;
+
+class VarNode {
+public:
+    string varName;
+    TypeTypeNode *varType;
+    vector<ModifierType> *varModifierType;
+    int scopeLv;
+    VarNode *nextVar;
+
+    VarNode(vector<ModifierType> *varModifierType, string Name, TypeTypeNode* varType, int ScopeLv){
+        this->varName = Name;
+        this->varType = varType;
+        this->varModifierType = varModifierType;
+        this->scopeLv = ScopeLv;
+    };
+    //Insert a Var and its info. into the table, including its name
+    //type, dimension of array(0 for not an array), scope level
+};
+
+class MethodNode {
+    public:
+    string methodName;
+    vector<vector<TypeTypeNode*>*> ParamsList;
+    vector<TypeTypeNode*> *returnTypeList;
+    vector<vector<ModifierType>> methodModifierTypesList;
+    MethodNode *nextMethod;
+
+    MethodNode(vector<ModifierType> *methodModifierTypesList, string MethodName, vector<FormalParamNode*> *Params, TypeTypeNode *returnType);
+};
+
+class SymbolTable {
+public:
+    int CurrentScope = 0;
+
+    int HashVar(VarNode *varN){
+        const char *tmpName = varN->varName.c_str();
+        return atoi(tmpName)%MaxSize;
+    };
+    int HashMethod(MethodNode *methodN){
+        const char *tmpName = methodN->methodName.c_str();
+        return atoi(tmpName)%MaxSize;
+    }
+
+    VarNode *varTableHead;
+    MethodNode *methodTableHead;
+
+    SymbolTable(){
+        varTableHead->nextVar = NULL;
+        methodTableHead->nextMethod = NULL;
+    }
+
+    void PushScope(){
+        CurrentScope++;
+    }
+
+    void PopScope(){
+        VarNode *currNode = varTableHead->nextVar;
+        while(currNode->scopeLv == CurrentScope){
+            currNode = currNode->nextVar;
+        }
+        varTableHead->nextVar = currNode;
+        CurrentScope--;
+    }
+
+    int AddVarNode(vector<ModifierType> *varModifierType, string Name, TypeTypeNode* varType){
+        VarNode *newVar;
+        newVar->varModifierType = varModifierType;
+        newVar->varName = Name;
+        newVar->varType = varType;
+        newVar->scopeLv = CurrentScope;
+
+        newVar->nextVar = varTableHead->nextVar;
+        varTableHead->nextVar = newVar;
+    }
+    int AddMethodNode(vector<ModifierType> *methodModifiers, string Name, vector<FormalParamNode*> *Params, TypeTypeNode* returnType){
+        MethodNode *newMethod;
+        newMethod->methodName = Name;
+        int ParamCount;
+        vector<TypeTypeNode*> *TmpMethod;
+        for(ParamCount = 0;ParamCount <= Params->size;ParamCount++){
+            TmpMethod->push_back((*Params)[ParamCount]->paramType);
+        }
+        newMethod->ParamsList.push_back(TmpMethod);
+
+        newMethod->returnTypeList->push_back(returnType);
+        newMethod->methodModifierTypesList.push_back(*methodModifiers);
+
+        newMethod->nextMethod = methodTableHead->nextMethod;
+        methodTableHead->nextMethod = newMethod; 
+    }
+
+    ReturnMethodNode SearchMethod(string MethodName, vector<FormalParamNode*> *paramTypes){
+        MethodNode *tmpPtr;
+        tmpPtr = methodTableHead;
+        ReturnMethodNode toBeReturn;
+        int TmpCount, sig;
+        sig = 1;
+        vector<TypeTypeNode*> *TmpMethod;
+        for(TmpCount = 0;TmpCount <= paramTypes->size;TmpCount++)
+            TmpMethod->push_back((*paramTypes)[TmpCount]->paramType);
+        //vector<vector<TypeTypeNode*>*> ParamsList;
+        TmpCount = 0;
+        while(tmpPtr->methodName != MethodName || tmpPtr->ParamsList[TmpCount] != TmpMethod){
+            TmpCount++;
+            tmpPtr = tmpPtr->nextMethod;
+            if(TmpCount > paramTypes->size){
+                sig = 0;
+                printf("No such method\n");
+                break;
+            }
+        }
+        if(sig == 1){
+            toBeReturn.methodName = tmpPtr->methodName;
+            toBeReturn.ParamsList = tmpPtr->ParamsList[TmpCount];
+            toBeReturn.methodModifierTypesList = tmpPtr->methodModifierTypesList[TmpCount];
+            toBeReturn.returnTypeList = (*tmpPtr->returnTypeList)[TmpCount];
+        }
+        toBeReturn.result = sig;
+        return toBeReturn;
+    }
+
+    VarNode SearchVar(string VarName){
+        VarNode *tmpPtr;
+        tmpPtr = varTableHead;
+        int TmpCount;
+        while( tmpPtr->varName != VarName ) {
+            TmpCount++;
+            tmpPtr = tmpPtr->nextVar;
+            if(tmpPtr->nextVar == NULL){
+                printf("No such variable\n");
+                break;
+            }
+        }
+        return *tmpPtr;
+    }
+};
