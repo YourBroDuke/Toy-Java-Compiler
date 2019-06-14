@@ -20,6 +20,13 @@ enum ModifierType {
     FINAL_TYPE
 };
 
+enum MemberDeclType {
+    METHOD_DECL_TYPE,
+    FIELD_DECL_TYPE,
+    CONSTRUCTOR_DECL_TYPE,
+    INTERFACE_DECL_TYPE
+};
+
 const map<ModifierType, string> ModifierMap = {
     {PUBLIC_TYPE, "public"},
     {PROTECTED_TYPE, "protect"},
@@ -53,7 +60,7 @@ const map<PrimitiveTypeOrNot, string> PrimitiveTypeOrNotMap = {
     {LONG_TYPE, "J"},
     {FLOAT_TYPE, "F"},
     {DOUBLE_TYPE, "D"},
-    {VOID_TYPE, "V"},
+    {VOID_TYPE, "V"}
 };
 
 enum StatementType {
@@ -61,9 +68,25 @@ enum StatementType {
     IF_ELSE_TYPE,
     IF_STAT_TYPE,
     FOR_STAT_TYPE,
+    WHILE_STAT_TYPE,
+    DO_WHILE_STAT_TYPE,
     RETURN_TYPE,
     RETURN_NONE_TYPE,
-    EXPR_TYPE
+    EXPR_TYPE,
+    NOTHING_TYPE
+};
+
+const map<StatementType, string> StatementTypeMap_forVisit = {
+    {BLOCK_TYPE, "BLOCK"},
+    {IF_ELSE_TYPE, "IF_ELSE"},
+    {IF_STAT_TYPE, "ONLY_IF"},
+    {FOR_STAT_TYPE, "FOR_STAT"},
+    {WHILE_STAT_TYPE, "WHILE_STAT"},
+    {DO_WHILE_STAT_TYPE, "DO_WHILE_STAT"},
+    {RETURN_TYPE, "RETURN_TYPE"},
+    {RETURN_NONE_TYPE, "RETURN_NONE"},
+    {EXPR_TYPE, "EXPR_TYPE"},
+    {NOTHING_TYPE, "NOTHING_TYPE"}
 };
 
 enum ExprType {
@@ -71,8 +94,7 @@ enum ExprType {
     IDEN_DOT,
     IDEN_METHOD,
     IDEN_DOT_METHOD,
-    ID_ARRAY,
-    ID_DOT_ARRAY,
+    EXPR_ARRAY,
     PRE_INCRE,
     POST_INCRE,
     PRE_DECRE,

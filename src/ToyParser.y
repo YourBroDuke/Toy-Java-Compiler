@@ -75,10 +75,11 @@ void debugInfo(string *s){
 %token <token> URSHIFT URSHIFT_ASSIGN NULL_LITERAL TRUE_LITERAL FALSE_LITERAL
 %token <token> SINGLES ASSIGNS
 
-%type <node> CompilationUnit PackageDecl  TypeDecl MemberDecl TypeType MethodBody
+%type <node> CompilationUnit PackageDecl TypeDecl MemberDecl TypeType MethodBody
 %type <node> ClassDecl QualifiedName ClassBody  MethodDecl Literal ImportDecl
 %type <node> VariableDeclaratorId Block BlockStatement Statement Expression Primary
 %type <node> MethodCallWithoutName FormalParam LocalVariableDecl VariableDeclarator VariableInitializer
+%type <node> ForControl ForInitOptional FieldDecl ConstructorDecl InterfaceDecl
 %type <token> LRBrackList
 %type <importNodes> ImportDeclListOptional
 %type <typeDeclNodes> TypeDeclListOptional
@@ -125,7 +126,7 @@ void debugInfo(string *s){
 
 %%
 
- /* done */
+ /* Done */
 CompilationUnit:
 	PackageDecl ImportDeclListOptional TypeDeclListOptional {
 		rootNode->packageNode = dynamic_cast<PackageNode*>($1);
@@ -138,16 +139,24 @@ CompilationUnit:
 		rootNode->typeDeclNodes = $2;
 	}
 	;
- /* done */
+ /* Done */
 PackageDecl:
-	PACKAGE QualifiedName SEMIC { $$ = new PackageNode(dynamic_cast<QualifiedNameNode*>($2)); }
+	PACKAGE QualifiedName SEMIC {
+		$$ = new PackageNode(dynamic_cast<QualifiedNameNode*>($2));
+	}
 	;
- /* done */
+ /* Done */
 ImportDeclListOptional:
-	ImportDeclListOptional ImportDecl { $1->push_back(dynamic_cast<ImportNode*>($2)); $$ = $1; }
-	| { $$ = new vector<ImportNode*>; }
+	ImportDeclListOptional ImportDecl {
+		$1->push_back(dynamic_cast<ImportNode*>($2));
+		$$ = $1;
+	}
+	| {
+		$$ = new vector<ImportNode*>;
+	}
 	;
 
+ /* Later */
 ImportDecl:
 	SingleImportDecl { $$ = new ImportNode(); }
 	| TypeImportDecl { $$ = new ImportNode(); }
@@ -163,16 +172,19 @@ TypeImportDecl:
 	| IMPORT STATIC QualifiedName DOT MUL SEMIC
 	;
 
- /* done */
+ /* Done */
 TypeDeclListOptional:
 	TypeDeclListOptional TypeDecl {
 		$1->push_back(dynamic_cast<TypeDeclNode*>($2));
 		$$ = $1;
 	}
-	| {$$ = new vector<TypeDeclNode*>;}
+	| {
+		$$ = new vector<TypeDeclNode*>;
+	}
 	;
 
- /* almost done */
+ /* ClassDecl Done */
+ /* Interface Later */
 TypeDecl:
 	ClassOrInterfaceModifierListOptional ClassDecl {
 		$$ = new TypeDeclNode(CLASS_TYPE, dynamic_cast<ClassDeclNode*>($2));
@@ -182,7 +194,7 @@ TypeDecl:
 	| SEMIC {$$ = NULL;}
 	;
 
- /* done */
+ /* Later */
 ClassDecl:
 	CLASS IDENTIFIER ClassBody {
 		$$ = new ClassDeclNode(*$2, dynamic_cast<ClassBodyNode*>($3));
@@ -192,11 +204,12 @@ ClassDecl:
 	}
 	;
 
+ /* Later */
 InterfaceDecl:
-	INTERFACE IDENTIFIER InterfaceBody
+	INTERFACE IDENTIFIER InterfaceBody { }
 	;
 
- /* done */
+ /* Done */
 ClassBody:
 	LBRACE RBRACE {
 		$$ = new ClassBodyNode();
@@ -208,7 +221,7 @@ ClassBody:
 	}
 	;
 
- /* done */
+ /* Done */
 ClassBodyDeclList:
 	MemberDecl {
 		$$ = new vector<MemberDeclNode*>;
@@ -220,51 +233,62 @@ ClassBodyDeclList:
 	}
 	;
 
+ /* Done */
 ForControl:
-	ForInitOptional SEMIC Expression SEMIC ExpressionList { debugInfo("three things all up"); }
-	| ForInitOptional SEMIC SEMIC ExpressionList
-	| ForInitOptional SEMIC Expression SEMIC
-	| ForInitOptional SEMIC SEMIC
+	ForInitOptional SEMIC Expression SEMIC ExpressionList {
+		$$ = new ForControlNode(dynamic_cast<ForInitNode*>($1), dynamic_cast<ExprNode*>($3), $5);
+	}
+	| ForInitOptional SEMIC SEMIC ExpressionList {
+		$$ = new ForControlNode(dynamic_cast<ForInitNode*>($1), $4);
+	}
+	| ForInitOptional SEMIC Expression SEMIC {
+		$$ = new ForControlNode(dynamic_cast<ForInitNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
+	| ForInitOptional SEMIC SEMIC {
+		$$ = new ForControlNode(dynamic_cast<ForInitNode*>($1));
+	}
 	;
 
+ /* Done */
+ /* return NULL if %empty */
 ForInitOptional:
-	LocalVariableDecl { debugInfo("do local variable decl"); }
-	| ExpressionList
-	|
+	LocalVariableDecl {
+		$$ = new ForInitNode(1, dynamic_cast<LocalVariableDeclNode*>($1));
+	}
+	| ExpressionList {
+		$$ = new ForInitNode(0, $1);
+	}
+	| {
+		$$ = NULL;
+	}
 	;
 
- /* Expressions */
-
+ /* Done */
 MethodCallWithoutName:
 	LPAREN ExpressionList RPAREN {
-		$$ = new MethodCallParamsNode();
-		dynamic_cast<MethodCallParamsNode*>($$)->exprs = $2;
+		$$ = new MethodCallParamsNode($2);
 	}
 	| LPAREN RPAREN {
 		$$ = new MethodCallParamsNode();
-		dynamic_cast<MethodCallParamsNode*>($$)->exprs = new vector<ExprNode*>;
 	}
 	;
 
+ /* Done */
 Expression:
 	Primary {
 		$$ = new ExprNode(PRIMARY_TYPE, dynamic_cast<PrimaryNode*>($1));
 	}
-	| IdentifierListWithDot { }
-	| IdentifierListWithDot MethodCallWithoutName {
-		ExprNode *tmp = new ExprNode(IDEN_DOT_METHOD);
-		tmp->ids = $1;
-		tmp->methodCallParams = dynamic_cast<MethodCallParamsNode*>($2);
-		$$ = tmp;
+	| IdentifierListWithDot {
+		$$ = new ExprNode(IDEN_DOT, $1);
 	}
-	| IDENTIFIER LBRACK Expression RBRACK { }
-	| IdentifierListWithDot LBRACK Expression RBRACK { }
+	| IdentifierListWithDot MethodCallWithoutName {
+		$$ = new ExprNode(IDEN_DOT_METHOD, $1, dynamic_cast<MethodCallParamsNode*>($2));
+	}
+	| Expression LBRACK Expression RBRACK {
+		$$ = new ExprNode(EXPR_ARRAY, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	}
 	| IDENTIFIER MethodCallWithoutName {
-		ExprNode *tmp = new ExprNode(IDEN_METHOD);
-		tmp->ids = new vector<IdentifierNode*>;
-		tmp->ids->push_back(new IdentifierNode(*$1));
-		tmp->methodCallParams = dynamic_cast<MethodCallParamsNode*>($2);
-		$$ = tmp;
+		$$ = new ExprNode(IDEN_METHOD, *$1, dynamic_cast<MethodCallParamsNode*>($2));
 	}
 	| Expression INCRE %prec INCRE {
 		$$ = new ExprNode(POST_INCRE, dynamic_cast<ExprNode*>($1));
@@ -385,7 +409,7 @@ Expression:
 	}
 	;
 
-
+ /* Done */
 ExpressionList:
 	Expression {
 		$$ = new vector<ExprNode*>;
@@ -397,15 +421,26 @@ ExpressionList:
 	}
 	;
 
+ /* Done */
 Primary:
-	LPAREN Expression RPAREN {  }
-	| THIS {  }
-	| SUPER {  }
-	| Literal { $$ = new PrimaryNode(PRIMARY_LITERAL, dynamic_cast<LiteralNode*>$1); }
-	| IDENTIFIER { $$ = new PrimaryNode(PRIMARY_IDEN, *$1); }
+	LPAREN Expression RPAREN {
+		$$ = new PrimaryNode(PRIMARY_EXPR, dynamic_cast<ExprNode*>($2));
+	}
+	| THIS {
+		$$ = new PrimaryNode(PRIMARY_THIS);
+	}
+	| SUPER {
+		$$ = new PrimaryNode(PRIMARY_SUPER);
+	}
+	| Literal {
+		$$ = new PrimaryNode(PRIMARY_LITERAL, dynamic_cast<LiteralNode*>$1);
+	}
+	| IDENTIFIER {
+		$$ = new PrimaryNode(PRIMARY_IDEN, *$1);
+	}
 	;
 
-
+ /* Done */
 VariableModifier:
 	FINAL {
 		$$ = FINAL_TYPE_L;
@@ -418,18 +453,20 @@ VariableModifier:
    for invalid return type after parsing.
  */
 
+ /* Done */
 MethodBody:
     Block { $$ = $1; }
     | SEMIC { $$ = NULL; }
     ;
 
 
-
+ /* Later */
 InterfaceBody:
 	LPAREN RPAREN
 	| LPAREN InterfaceBodyDeclList RPAREN
 	;
 
+ /* Later */
 InterfaceBodyDeclList:
 	InterfaceBodyDecl
 	| InterfaceBodyDeclList InterfaceBodyDecl
@@ -438,19 +475,21 @@ InterfaceBodyDeclList:
 FieldDecl:
 	TypeType VariableDeclarators SEMIC { debugInfo("variable decl in class"); }
 	;
-
+ 
+ /* Later */
 InterfaceBodyDecl:
 	InterfaceMemberDecl
 	| SEMIC
 	;
 
+ /* Later */
 InterfaceMemberDecl:
     InterfaceMethodDecl
 	| InterfaceDecl
 	| ClassDecl
 	;
 
-
+ /* Later */
 InterfaceMethodDecl:
 	InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams LRBrackList THROWS QualifiedNameList MethodBody
 	| InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams LRBrackList MethodBody
@@ -458,16 +497,24 @@ InterfaceMethodDecl:
 	| InterfaceMethodModifierListOptional TypeTypeOrVoid IDENTIFIER FormalParams MethodBody
 	;
 
+ /* Later */
 InterfaceMethodModifierListOptional:
 	InterfaceMethodModifierListOptional InterfaceMethodModifier
 	|
 	;
 
+ /* Done */
 MemberModifierListOptional:
-	MemberModifierListOptional MemberModifier { $1->push_back($2); $$ = $1; }
-	| { $$ = new vector<ModifierType>; }
+	MemberModifierListOptional MemberModifier {
+		$1->push_back($2);
+		$$ = $1;
+	}
+	| {
+		$$ = new vector<ModifierType>;
+	}
 	;
 
+ /* Done */
 MemberModifier:
 	PUBLIC { $$ = PUBLIC_TYPE; }
 	| PROTECTED { $$ = PROTECTED_TYPE; }
@@ -478,6 +525,7 @@ MemberModifier:
 	| STRICTFP { $$ = STRICTFP_TYPE; }
 	;
 
+ /* Later */
 InterfaceMethodModifier:
     PUBLIC
 	| ABSTRACT
@@ -486,13 +534,15 @@ InterfaceMethodModifier:
 	| STRICTFP
 	;
 
- /* About params */
 
+ /* Done */
+ /* 0 params -> vector size == 0 */
 FormalParams:
 	LPAREN FormalParameterWithCommaList RPAREN { $$ = $2; }
 	| LPAREN RPAREN { $$ = new vector<FormalParamNode*>; }
 	;
-
+ 
+ /* Done */
 FormalParameterWithCommaList:
 	FormalParam {
 		$$ = new vector<FormalParamNode*>;
@@ -504,25 +554,26 @@ FormalParameterWithCommaList:
 	}
 	;
 
-
+ /* Done */
 FormalParam:
 	TypeType VariableDeclaratorId {
 		$$ = new FormalParamNode(dynamic_cast<TypeTypeNode*>($1), dynamic_cast<VariableDeclaratorIdNode*>($2));
 	}
 	;
 
- /* ---- End Params ----*/
-
+ /* Later */
 QualifiedNameList:
 	QualifiedName
 	| QualifiedNameList COMMA QualifiedName
 	;
 
+ /* Done */
 VariableModifierList:
 	VariableModifier { $$ = $1; }
 	| VariableModifierList VariableModifier { $$ = $2; }
 	;
 
+ /* Done */
 PrimitiveType:
 	BOOLEAN { $$ = BOOLEAN_TYPE; }
 	| CHAR { $$ = CHAR_TYPE; }
@@ -534,6 +585,7 @@ PrimitiveType:
 	| DOUBLE { $$ = DOUBLE_TYPE; }
 	;
 
+ /* Done */
 IdentifierListWithDot:
 	IDENTIFIER DOT IDENTIFIER {
 		$$ = new vector<IdentifierNode*>;
@@ -546,50 +598,37 @@ IdentifierListWithDot:
 	}
 	;
 
-
+ /* Done */
 TypeType:
 	IdentifierListWithDot {
-		TypeTypeNode* tmp = new TypeTypeNode(NONPR_TYPE);
-		tmp->typeInfo = $1;
-		tmp->arrayDim = 0;
-		$$ = tmp;
+		$$ = new TypeTypeNode(NONPR_TYPE, $1);
+	}
+	| IdentifierListWithDot LRBrackList {
+		$$ = new TypeTypeNode(NONPR_TYPE, $1, $2);
 	}
 	| IDENTIFIER {
-		TypeTypeNode* tmp = new TypeTypeNode(NONPR_TYPE);
-		tmp->typeInfo = new vector<IdentifierNode*>;
-		tmp->typeInfo->push_back(new IdentifierNode(*$1));
-		tmp->arrayDim = 0;
-		$$ = tmp;
+		$$ = new TypeTypeNode(NONPR_TYPE, *$1);
 	}
 	| IDENTIFIER LRBrackList {
-		TypeTypeNode* tmp = new TypeTypeNode(NONPR_TYPE);
-		tmp->typeInfo = new vector<IdentifierNode*>;
-		tmp->typeInfo->push_back(new IdentifierNode(*$1));
-		tmp->arrayDim = $2;
-		$$ = tmp;
+		$$ = new TypeTypeNode(NONPR_TYPE, *$1, $2);
 	}
 	| PrimitiveType {
-		TypeTypeNode *tmp = new TypeTypeNode($1);
-		tmp->typeInfo = new vector<IdentifierNode*>;
-		tmp->arrayDim = 0;
-		$$ = tmp;
+		$$ = new TypeTypeNode($1);
 	}
 	| PrimitiveType LRBrackList {
-		TypeTypeNode *tmp = new TypeTypeNode($1);
-		tmp->typeInfo = new vector<IdentifierNode*>;
-		tmp->arrayDim = $2;
-		$$ = tmp;
+		$$ = new TypeTypeNode($1, $2);
 	}
 	;
 
+ /* Later */
 TypeTypeOrVoid:
 	TypeType { debugInfo("Reduced TypeTypeOrVoid"); }
 	| VOID { debugInfo("Reduced TypeTypeOrVoid"); }
 	;
 
 ConstructorDecl:
-	IDENTIFIER FormalParams THROWS QualifiedNameList Block
-	| IDENTIFIER FormalParams Block
+	IDENTIFIER FormalParams THROWS QualifiedNameList Block {}
+	| IDENTIFIER FormalParams Block {}
 	;
 
 
@@ -598,7 +637,7 @@ TypeList:
 	| TypeList COMMA TypeType
 	;
 
-
+ /* Done */
 VariableDeclarators:
 	VariableDeclarator {
 		$$ = new vector<VariableDeclaratorNode*>;
@@ -610,6 +649,7 @@ VariableDeclarators:
 	}
 	;
 
+ /* Done */
 VariableDeclarator:
 	VariableDeclaratorId {
 		$$ = new VariableDeclaratorNode(dynamic_cast<VariableDeclaratorIdNode*>($1));
@@ -619,12 +659,13 @@ VariableDeclarator:
 	}
 	;
 
+ /* Done */
 VariableDeclaratorId:
 	IDENTIFIER {
 		$$ = new VariableDeclaratorIdNode(0, *$1);
 	}
 	;
-
+ /* Done */
 VariableInitializer:
 	ArrayInitializer {
 		$$ = new VariableInitializerNode(0, $1); // it is not single expr but an array
@@ -633,6 +674,8 @@ VariableInitializer:
 		$$ = new VariableInitializerNode(1, dynamic_cast<ExprNode*>($1)); // it is a single expr
 	}
 	;
+
+ /* Done */
 VariableInitializerListWithComma:
 	VariableInitializer {
 		$$ = new vector<VariableInitializerNode*>;
@@ -644,6 +687,7 @@ VariableInitializerListWithComma:
 	}
 	;
 
+ /* Done */
 ArrayInitializer:
 	LBRACE VariableInitializerListWithComma COMMA RBRACE {
 		$$ = $2;
@@ -660,17 +704,17 @@ ArrayInitializer:
  /* Finish Block */
  /* BlockStatement */
  /* (Statement) */
+ /* Done */
 Block:
 	LBRACE BlockStatementList RBRACE {
-		$$ = new BlockNode();
-		dynamic_cast<BlockNode*>($$)->stats = $2;
+		$$ = new BlockNode($2);
 	}
 	| LBRACE RBRACE {
 		$$ = new BlockNode();
-		dynamic_cast<BlockNode*>($$)->stats = new vector<BlockStatementNode*>;
 	}
 	;
-
+ 
+ /* Done */
 BlockStatementList:
 	BlockStatement {
 		$$ = new vector<BlockStatementNode*>;
@@ -682,77 +726,100 @@ BlockStatementList:
 	}
 	;
 
+ /* Done */
 BlockStatement:
 	LocalVariableDecl SEMIC {
-		cout << "+\n+\n+\n" << $1 << "\n-\n-\n-\n";
 		$$ = new BlockStatementNode(1, dynamic_cast<Statement*>($1));
 	}
 	| Statement {
 		$$ = new BlockStatementNode(0, dynamic_cast<Statement*>($1));	// NOT local variable decl
 	}
 	;
-
+ 
+ /* Done */
 LocalVariableDecl:
 	VariableModifierList TypeType VariableDeclarators {
-		$$ = new LocalVariableDeclNode(1, dynamic_cast<TypeTypeNode*>($2)); // 1 - FINAL
-		dynamic_cast<LocalVariableDeclNode*>($$)->decls = $3;
-		cout << "-\n-\n-\n" << $$ << "\n-\n-\n-\n";
+		$$ = new LocalVariableDeclNode(1, dynamic_cast<TypeTypeNode*>($2), $3); // 1 - FINAL
 	}
 	| TypeType VariableDeclarators {
-		$$ = new LocalVariableDeclNode(0, dynamic_cast<TypeTypeNode*>($1));	// 0 - NOT FINAL
-		dynamic_cast<LocalVariableDeclNode*>($$)->decls = $2;
-		cout << "-\n-\n-\n" << $$ << "\n-\n-\n-\n";
+		$$ = new LocalVariableDeclNode(0, dynamic_cast<TypeTypeNode*>($1), $2);	// 0 - NOT FINAL
 	}
 	;
 
 
- /* TODO: finish (Statement) */
+ /* Done */
 Statement:
-	Block {  }
-	| IF LPAREN Expression RPAREN Statement ELSE Statement { debugInfo("if () else ()"); }
-	| IF LPAREN Expression RPAREN Statement %prec IFX {  }
-	| FOR LPAREN ForControl RPAREN Statement { debugInfo("for statement"); }
+	Block {
+		$$ = new StatementNode(BLOCK_TYPE, dynamic_cast<BlockNode*>($1));
+	}
+	| IF LPAREN Expression RPAREN Statement ELSE Statement {
+		$$ = new StatementNode(IF_ELSE_TYPE, dynamic_cast<Statement*>($3), dynamic_cast<Statement*>($5), dynamic_cast<Statement*>($7));
+	}
+	| IF LPAREN Expression RPAREN Statement %prec IFX {
+		$$ = new StatementNode(IF_STAT_TYPE, dynamic_cast<Statement*>($3), dynamic_cast<Statement*>($5));
+	}
+	| FOR LPAREN ForControl RPAREN Statement {
+		$$ = new StatementNode(FOR_STAT_TYPE, dynamic_cast<ForControlNode*>($3), dynamic_cast<Statement*>($5));
+	}
+	| WHILE LPAREN RPAREN Statement {
+		$$ = new StatementNode(WHILE_STAT_TYPE, static_cast<Statement*>(NULL), dynamic_cast<Statement*>($4));
+	}
+	| WHILE LPAREN Expression RPAREN Statement {
+		$$ = new StatementNode(WHILE_STAT_TYPE, dynamic_cast<ExprNode*>($3), dynamic_cast<Statement*>($5));
+	}
+	| DO Statement WHILE LPAREN RPAREN SEMIC {
+		$$ = new StatementNode(DO_WHILE_STAT_TYPE, static_cast<Statement*>(NULL), dynamic_cast<Statement*>($2));
+	}
+	| DO Statement WHILE LPAREN Expression RPAREN SEMIC {
+		$$ = new StatementNode(DO_WHILE_STAT_TYPE, dynamic_cast<ExprNode*>($5), dynamic_cast<Statement*>($2));
+	}
 	| RETURN Expression SEMIC {
-		$$ = new StatementNode(RETURN_TYPE, dynamic_cast<ExprNode*>($2));
+		$$ = new StatementNode(RETURN_TYPE, dynamic_cast<Statement*>($2));
 	}
 	| RETURN SEMIC {
 		$$ = new StatementNode(RETURN_NONE_TYPE);
 	}
-	| SEMIC {  }
+	| SEMIC {
+		$$ = new StatementNode(NOTHING_TYPE);
+	}
 	| Expression SEMIC {
-		$$ = new StatementNode(EXPR_TYPE, dynamic_cast<ExprNode*>($1));
+		$$ = new StatementNode(EXPR_TYPE, dynamic_cast<Statement*>($1));
 	}
 	;
 
-
+ /* Done */
 MemberDecl:
 	MemberModifierListOptional MethodDecl {
-		$$ = new MemberDeclNode($2);
-		dynamic_cast<MemberDeclNode*>($$)->modifiers = $1;
+		$$ = new MemberDeclNode(METHOD_DECL_TYPE, $1, $2);
 	}
-	| MemberModifierListOptional FieldDecl { debugInfo("Reduced from FieldDecl"); }
-	| MemberModifierListOptional ConstructorDecl { }
-	| MemberModifierListOptional InterfaceDecl { }
+	| MemberModifierListOptional FieldDecl {
+		$$ = new MemberDeclNode(FIELD_DECL_TYPE, $1, $2);
+	}
+	| MemberModifierListOptional ConstructorDecl {
+		$$ = new MemberDeclNode(CONSTRUCTOR_DECL_TYPE, $1, $2);
+	}
+	| MemberModifierListOptional InterfaceDecl {
+		$$ = new MemberDeclNode(INTERFACE_DECL_TYPE, $1, $2);
+	}
 	;
 
  /* about method */
-
+ /* Later */
 MethodDecl:
 	TypeType IDENTIFIER FormalParams THROWS QualifiedNameList MethodBody { }
 	| VOID IDENTIFIER FormalParams THROWS QualifiedNameList MethodBody { }
 	| TypeType IDENTIFIER FormalParams MethodBody {
-		$$ = new MethodDeclNode(dynamic_cast<TypeTypeNode*>($1), *$2, dynamic_cast<BlockNode*>($4));
+		$$ = new MethodDeclNode(dynamic_cast<TypeTypeNode*>($1), *$2, $3, dynamic_cast<BlockNode*>($4));
 		dynamic_cast<MethodDeclNode*>($$)->params = $3;
 	}
 	| VOID IDENTIFIER FormalParams MethodBody {
-		$$ = new MethodDeclNode(new TypeTypeNode(VOID_TYPE), *$2, dynamic_cast<BlockNode*>($4));
-		dynamic_cast<MethodDeclNode*>($$)->params = $3;
+		$$ = new MethodDeclNode(new TypeTypeNode(VOID_TYPE), *$2, $3, dynamic_cast<BlockNode*>($4));
 	}
 	;
 
 
  /* Some lower Non-terminals */
-
+ /* Done */
 QualifiedName:
 	IDENTIFIER { 
 		$$ = new QualifiedNameNode();
@@ -764,15 +831,18 @@ QualifiedName:
 	 }
 	;
 
-
+ /* Done */
 ClassOrInterfaceModifierListOptional:
 	ClassOrInterfaceModifierListOptional ClassOrInterfaceModifier {
 		$1->push_back($2);
 		$$ = $1;
 	}
-	| { $$ = new vector<ModifierType>; }
+	| {
+		$$ = new vector<ModifierType>;
+	}
 	;
 
+ /* Done */
 ClassOrInterfaceModifier:
 	PUBLIC { $$ = PUBLIC_TYPE; }
 	| PRIVATE { $$ = PRIVATE_TYPE; }
@@ -783,24 +853,44 @@ ClassOrInterfaceModifier:
 	| STRICTFP { $$ = STRICTFP_TYPE; }
 	;
 
+ /* Done */
 Literal:
 	DECIMAL_LITERAL {
-		$$ = new LiteralNode(INTEGER_LIT, (int64_t)atoi($1->c_str()));
+		$$ = new LiteralNode(INTEGER_LIT, *$1);
 	}
-	| HEX_LITERAL { }
-	| OCT_LITERAL { }
-	| BINARY_LITERAL { }
-	| FLOAT_LITERAL { }
-	| HEXFLOAT_LITERAL { }
-	| CHAR_LITERAL { }
+	| HEX_LITERAL {
+		$$ = new LiteralNode(INTEGER_LIT, *$1);
+	}
+	| OCT_LITERAL {
+		$$ = new LiteralNode(INTEGER_LIT, *$1);
+	}
+	| BINARY_LITERAL {
+		$$ = new LiteralNode(INTEGER_LIT, *$1);	// Implement it if have time
+	}
+	| FLOAT_LITERAL {
+		$$ = new LiteralNode(FLOAT_LIT, *$1);
+	}
+	| HEXFLOAT_LITERAL {
+		$$ = new LiteralNode(FLOAT_LIT, *$1);
+	}
+	| CHAR_LITERAL {
+		$$ = new LiteralNode(CHAR_LIT, *$1);
+	}
 	| STRING_LITERAL {
 		$$ = new LiteralNode(STRING_LIT, *$1);
 	}
-	| TRUE_LITERAL { }
-	| FALSE_LITERAL { }
-	| NULL_LITERAL { }
+	| TRUE_LITERAL {
+		$$ = new LiteralNode(BOOL_LIT, "true");
+	}
+	| FALSE_LITERAL {
+		$$ = new LiteralNode(BOOL_LIT, "false");
+	}
+	| NULL_LITERAL {
+		$$ = new LiteralNode(NULL_LIT, "NULL");
+	}
 	;
 
+ /* Done */
 LRBrackList:
 	LBRACK RBRACK { $$ = 1; }
 	| LRBrackList LBRACK RBRACK { $$ = $2 + 1; }
