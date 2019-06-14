@@ -46,8 +46,8 @@ public:
     int HashVar(VarNode);
     int HashMethod(MethodNode);
 
-    VarNode *varTableHead;
-    MethodNode *methodTableHead;
+    VarNode *varTableHead[MaxSize];
+    MethodNode *methodTableHead[MaxSize];
 
     void PushScope(){
         CurrentScope++;

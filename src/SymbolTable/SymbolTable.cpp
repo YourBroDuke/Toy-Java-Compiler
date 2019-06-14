@@ -39,21 +39,25 @@ class SymbolTable {
 public:
     int CurrentScope = 0;
 
-    int HashVar(VarNode *varN){
-        const char *tmpName = varN->varName.c_str();
+    int HashVar(string nameOfVar){
+        const char *tmpName = nameOfVar.c_str();
         return atoi(tmpName)%MaxSize;
     };
-    int HashMethod(MethodNode *methodN){
-        const char *tmpName = methodN->methodName.c_str();
+
+    int HashMethod(string nameOfMethod){
+        const char *tmpName = nameOfMethod.c_str();
         return atoi(tmpName)%MaxSize;
     }
 
-    VarNode *varTableHead;
-    MethodNode *methodTableHead;
+    VarNode *varTableHead[MaxSize];
+    MethodNode *methodTableHead[MaxSize];
 
     SymbolTable(){
-        varTableHead->nextVar = NULL;
-        methodTableHead->nextMethod = NULL;
+        int initCount;
+        for( initCount = 0;initCount < MaxSize;initCount++ ){    
+            varTableHead[initCount]->nextVar = NULL;
+            methodTableHead[initCount]->nextMethod = NULL;
+        }
     }
 
     void PushScope(){
@@ -61,11 +65,14 @@ public:
     }
 
     void PopScope(){
-        VarNode *currNode = varTableHead->nextVar;
-        while(currNode->scopeLv == CurrentScope){
-            currNode = currNode->nextVar;
+        VarNode *currNode = varTableHead[0]->nextVar;
+        int goThroughCount;
+        for( goThroughCount = 0;goThroughCount < MaxSize;goThroughCount++){
+            while(currNode->scopeLv == CurrentScope){
+                currNode = currNode->nextVar;
+            }
+            varTableHead[goThroughCount]->nextVar = currNode;
         }
-        varTableHead->nextVar = currNode;
         CurrentScope--;
     }
 
@@ -76,9 +83,10 @@ public:
         newVar->varType = varType;
         newVar->scopeLv = CurrentScope;
 
-        newVar->nextVar = varTableHead->nextVar;
-        varTableHead->nextVar = newVar;
+        newVar->nextVar = varTableHead[HashVar(newVar->varName)]->nextVar;
+        varTableHead[HashVar(newVar->varName)]->nextVar = newVar;
     }
+
     int AddMethodNode(vector<ModifierType> *methodModifiers, string Name, vector<FormalParamNode*> *Params, TypeTypeNode* returnType){
         MethodNode *newMethod;
         newMethod->methodName = Name;
@@ -92,15 +100,15 @@ public:
         newMethod->returnTypeList->push_back(returnType);
         newMethod->methodModifierTypesList.push_back(*methodModifiers);
 
-        newMethod->nextMethod = methodTableHead->nextMethod;
-        methodTableHead->nextMethod = newMethod; 
+        newMethod->nextMethod = methodTableHead[HashMethod(newMethod->methodName)]->nextMethod;
+        methodTableHead[HashMethod(newMethod->methodName)]->nextMethod = newMethod; 
     }
 
     ReturnMethodNode SearchMethod(string MethodName, vector<FormalParamNode*> *paramTypes){
         MethodNode *tmpPtr;
-        tmpPtr = methodTableHead;
         ReturnMethodNode toBeReturn;
         int TmpCount, sig;
+        tmpPtr = methodTableHead[HashMethod(MethodName)];
         sig = 1;
         vector<TypeTypeNode*> *TmpMethod;
         for(TmpCount = 0;TmpCount <= paramTypes->size;TmpCount++)
@@ -123,13 +131,14 @@ public:
             toBeReturn.returnTypeList = (*tmpPtr->returnTypeList)[TmpCount];
         }
         toBeReturn.result = sig;
+
         return toBeReturn;
     }
 
     VarNode SearchVar(string VarName){
         VarNode *tmpPtr;
-        tmpPtr = varTableHead;
-        int TmpCount;
+        int TmpCount, goThroughCount;
+        tmpPtr = varTableHead[HashVar(VarName)];
         while( tmpPtr->varName != VarName ) {
             TmpCount++;
             tmpPtr = tmpPtr->nextVar;
