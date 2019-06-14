@@ -291,7 +291,8 @@ TypeTypeNode::TypeTypeNode(PrimitiveTypeOrNot type, const string& id, int arrayD
 
 // TODO
 void TypeTypeNode::printType() {
-    cout << "This is a " << PrimitiveTypeOrNotMap.at(this->type) << " type method" << endl;
+    if (this->type != NONPR_TYPE)
+        cout << "This is a " << PrimitiveTypeOrNotMap.at(this->type) << " type method" << endl;
 }
 
 void TypeTypeNode::codeGen(JContext* context){
