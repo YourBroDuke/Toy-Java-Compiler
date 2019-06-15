@@ -39,28 +39,28 @@ const map<ModifierType, string> ModifierMap = {
 };
 
 enum PrimitiveTypeOrNot {
-    BOOLEAN_TYPE,
-    CHAR_TYPE,
-    BYTE_TYPE,
-    SHORT_TYPE,
-    INT_TYPE,
-    LONG_TYPE,
-    FLOAT_TYPE,
-    DOUBLE_TYPE,
-    VOID_TYPE,
+    BOOLEAN_PTYPE,
+    CHAR_PTYPE,
+    BYTE_PTYPE,
+    SHORT_PTYPE,
+    INT_PTYPE,
+    LONG_PTYPE,
+    FLOAT_PTYPE,
+    DOUBLE_PTYPE,
+    VOID_PTYPE,
     NONPR_TYPE
 };
 
 const map<PrimitiveTypeOrNot, string> PrimitiveTypeOrNotMap = {
-    {BOOLEAN_TYPE, "Z"},
-    {CHAR_TYPE, "C"},
-    {BYTE_TYPE, "B"},
-    {SHORT_TYPE, "S"},
-    {INT_TYPE, "I"},
-    {LONG_TYPE, "J"},
-    {FLOAT_TYPE, "F"},
-    {DOUBLE_TYPE, "D"},
-    {VOID_TYPE, "V"}
+    {BOOLEAN_PTYPE, "Z"},
+    {CHAR_PTYPE, "C"},
+    {BYTE_PTYPE, "B"},
+    {SHORT_PTYPE, "S"},
+    {INT_PTYPE, "I"},
+    {LONG_PTYPE, "J"},
+    {FLOAT_PTYPE, "F"},
+    {DOUBLE_PTYPE, "D"},
+    {VOID_PTYPE, "V"}
 };
 
 enum StatementType {
@@ -89,7 +89,7 @@ const map<StatementType, string> StatementTypeMap_forVisit = {
     {NOTHING_TYPE, "NOTHING_TYPE"}
 };
 
-enum ExprDeclType {
+enum ExprStatType {
     PRIMARY_TYPE,
     IDEN_DOT,
     IDEN_METHOD,

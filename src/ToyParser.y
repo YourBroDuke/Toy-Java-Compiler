@@ -589,14 +589,14 @@ VariableModifierList:
 
  /* Done */
 PrimitiveType:
-	BOOLEAN { $$ = BOOLEAN_TYPE; }
-	| CHAR { $$ = CHAR_TYPE; }
-	| BYTE { $$ = BYTE_TYPE; }
-	| SHORT { $$ = SHORT_TYPE; }
-	| INT { $$ = INT_TYPE; }
-	| LONG { $$ = LONG_TYPE; }
-	| FLOAT { $$ = FLOAT_TYPE; }
-	| DOUBLE { $$ = DOUBLE_TYPE; }
+	BOOLEAN { $$ = BOOLEAN_PTYPE; }
+	| CHAR { $$ = CHAR_PTYPE; }
+	| BYTE { $$ = BYTE_PTYPE; }
+	| SHORT { $$ = SHORT_PTYPE; }
+	| INT { $$ = INT_PTYPE; }
+	| LONG { $$ = LONG_PTYPE; }
+	| FLOAT { $$ = FLOAT_PTYPE; }
+	| DOUBLE { $$ = DOUBLE_PTYPE; }
 	;
 
  /* Done */
@@ -827,7 +827,7 @@ MethodDecl:
 		dynamic_cast<MethodDeclNode*>($$)->params = $3;
 	}
 	| VOID IDENTIFIER FormalParams MethodBody {
-		$$ = new MethodDeclNode(new TypeTypeNode(VOID_TYPE), *$2, $3, dynamic_cast<BlockNode*>($4));
+		$$ = new MethodDeclNode(new TypeTypeNode(VOID_PTYPE), *$2, $3, dynamic_cast<BlockNode*>($4));
 	}
 	;
 

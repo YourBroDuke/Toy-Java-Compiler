@@ -324,7 +324,7 @@ public:
 class ExprNode : public Statement
 {
 public:
-    ExprDeclType type;
+    ExprStatType type;
     PrimaryNode *primary;
     vector<IdentifierNode*> *ids;
     MethodCallParamsNode *methodCallParams;
@@ -332,14 +332,14 @@ public:
     vector<ExprNode*> *ArrayIndexQueryList;
 
     void Visit();
-    ExprNode(ExprDeclType type, PrimaryNode *node);
-    ExprNode(ExprDeclType type, vector<IdentifierNode*> *ids);
-    ExprNode(ExprDeclType type, vector<IdentifierNode*> *ids, MethodCallParamsNode *methodCallParams);
-    ExprNode(ExprDeclType type, const string& id, MethodCallParamsNode *methodCallParams);
-    ExprNode(ExprDeclType type, ExprNode *node);
-    ExprNode(ExprDeclType type, ExprNode *node1, ExprNode *node2);
-    ExprNode(ExprDeclType type, const string& id, vector<ExprNode*> *ArrayIndexQueryList);
-    ExprNode(ExprDeclType type, vector<IdentifierNode*> *ids, vector<ExprNode*> *ArrayIndexQueryList);
+    ExprNode(ExprStatType type, PrimaryNode *node);
+    ExprNode(ExprStatType type, vector<IdentifierNode*> *ids);
+    ExprNode(ExprStatType type, vector<IdentifierNode*> *ids, MethodCallParamsNode *methodCallParams);
+    ExprNode(ExprStatType type, const string& id, MethodCallParamsNode *methodCallParams);
+    ExprNode(ExprStatType type, ExprNode *node);
+    ExprNode(ExprStatType type, ExprNode *node1, ExprNode *node2);
+    ExprNode(ExprStatType type, const string& id, vector<ExprNode*> *ArrayIndexQueryList);
+    ExprNode(ExprStatType type, vector<IdentifierNode*> *ids, vector<ExprNode*> *ArrayIndexQueryList);
     ~ExprNode();
 
 public:

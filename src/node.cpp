@@ -1,7 +1,7 @@
 #include "node.h"
 #include "MetaType.h"
-#include "../utils/utils.hpp"
 #include "codeGen/predefined.hpp"
+#include "utils/utils.hpp"
 #include <iostream>
 #include <sstream>
 using namespace std;
@@ -519,7 +519,7 @@ void Statement::codeGen(JContext* context){
     cerr << "ERROR! This should not be entered!" << endl;
 }
 
-ExprNode::ExprNode(ExprDeclType type, PrimaryNode *node) {
+ExprNode::ExprNode(ExprStatType type, PrimaryNode *node) {
     this->type = type;
     this->primary = node;
     this->ids = NULL;
@@ -528,7 +528,7 @@ ExprNode::ExprNode(ExprDeclType type, PrimaryNode *node) {
     this->ArrayIndexQueryList = NULL;
 }
 
-ExprNode::ExprNode(ExprDeclType type, vector<IdentifierNode*> *ids) {
+ExprNode::ExprNode(ExprStatType type, vector<IdentifierNode*> *ids) {
     this->type = type;
     this->primary = NULL;
     this->ids = ids;
@@ -537,7 +537,7 @@ ExprNode::ExprNode(ExprDeclType type, vector<IdentifierNode*> *ids) {
     this->ArrayIndexQueryList = NULL;
 }
 
-ExprNode::ExprNode(ExprDeclType type, vector<IdentifierNode*> *ids, MethodCallParamsNode *methodCallParams) {
+ExprNode::ExprNode(ExprStatType type, vector<IdentifierNode*> *ids, MethodCallParamsNode *methodCallParams) {
     this->type = type;
     this->primary = NULL;
     this->ids = ids;
@@ -546,7 +546,7 @@ ExprNode::ExprNode(ExprDeclType type, vector<IdentifierNode*> *ids, MethodCallPa
     this->ArrayIndexQueryList = NULL;
 }
 
-ExprNode::ExprNode(ExprDeclType type, const string& id, MethodCallParamsNode *methodCallParams) {
+ExprNode::ExprNode(ExprStatType type, const string& id, MethodCallParamsNode *methodCallParams) {
     this->type = type;
     this->primary = NULL;
     this->ids = new vector<IdentifierNode*>;
@@ -556,7 +556,7 @@ ExprNode::ExprNode(ExprDeclType type, const string& id, MethodCallParamsNode *me
     this->ArrayIndexQueryList = NULL;
 }
 
-ExprNode::ExprNode(ExprDeclType type, ExprNode *node) {
+ExprNode::ExprNode(ExprStatType type, ExprNode *node) {
     this->type = type;
     this->primary = NULL;
     this->ids = NULL;
@@ -566,7 +566,7 @@ ExprNode::ExprNode(ExprDeclType type, ExprNode *node) {
     this->ArrayIndexQueryList = NULL;
 }
 
-ExprNode::ExprNode(ExprDeclType type, ExprNode *node1, ExprNode *node2) {
+ExprNode::ExprNode(ExprStatType type, ExprNode *node1, ExprNode *node2) {
     this->type = type;
     this->primary = NULL;
     this->ids = NULL;
@@ -576,7 +576,7 @@ ExprNode::ExprNode(ExprDeclType type, ExprNode *node1, ExprNode *node2) {
     this->ArrayIndexQueryList = NULL;
 }
 
-ExprNode::ExprNode(ExprDeclType type, const string& id, vector<ExprNode*> *ArrayIndexQueryList) {
+ExprNode::ExprNode(ExprStatType type, const string& id, vector<ExprNode*> *ArrayIndexQueryList) {
     this->type = type;
     this->primary = NULL;
     this->ids = new vector<IdentifierNode*>;
@@ -586,7 +586,7 @@ ExprNode::ExprNode(ExprDeclType type, const string& id, vector<ExprNode*> *Array
     this->ArrayIndexQueryList = this->ArrayIndexQueryList;
 }
 
-ExprNode::ExprNode(ExprDeclType type, vector<IdentifierNode*> *ids, vector<ExprNode*> *ArrayIndexQueryList) {
+ExprNode::ExprNode(ExprStatType type, vector<IdentifierNode*> *ids, vector<ExprNode*> *ArrayIndexQueryList) {
     this->type = type;
     this->primary = NULL;
     this->ids = ids;
