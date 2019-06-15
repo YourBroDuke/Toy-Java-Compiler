@@ -77,7 +77,7 @@ void debugInfo(string *s){
 
 %type <node> CompilationUnit PackageDecl TypeDecl MemberDecl TypeType MethodBody
 %type <node> ClassDecl QualifiedName ClassBody  MethodDecl Literal ImportDecl
-%type <node> VariableDeclaratorId Block BlockStatement Statement Expression Primary
+%type <node> VariableDeclaratorId Block BlockStatement Statement Expression
 %type <node> MethodCallWithoutName FormalParam LocalVariableDecl VariableDeclarator VariableInitializer
 %type <node> ForControl ForInitOptional FieldDecl ConstructorDecl InterfaceDecl
 %type <token> LRBrackList
@@ -90,7 +90,7 @@ void debugInfo(string *s){
 %type <blockStatementNodes> BlockStatementList
 %type <arrayInitializer> ArrayInitializer VariableInitializerListWithComma
 %type <ids> IdentifierListWithDot
-%type <exprNodes> ExpressionList
+%type <exprNodes> ExpressionList ArrayIndexQueryList
 %type <primitiveType> PrimitiveType
 %type <localVarType> VariableModifier VariableModifierList
 %type <varDecls> VariableDeclarators
@@ -275,8 +275,25 @@ MethodCallWithoutName:
 
  /* Done */
 Expression:
-	Primary {
-		$$ = new ExprNode(PRIMARY_TYPE, dynamic_cast<PrimaryNode*>($1));
+	LPAREN Expression RPAREN {
+		PrimaryNode *tmp = new PrimaryNode(PRIMARY_EXPR, dynamic_cast<ExprNode*>($2));
+		$$ = new ExprNode(PRIMARY_TYPE, tmp);
+	}
+	| THIS {
+		PrimaryNode *tmp = new PrimaryNode(PRIMARY_THIS);
+		$$ = new ExprNode(PRIMARY_TYPE, tmp);
+	}
+	| SUPER {
+		PrimaryNode *tmp = new PrimaryNode(PRIMARY_SUPER);
+		$$ = new ExprNode(PRIMARY_TYPE, tmp);
+	}
+	| Literal {
+		PrimaryNode *tmp = new PrimaryNode(PRIMARY_LITERAL, dynamic_cast<LiteralNode*>($1));
+		$$ = new ExprNode(PRIMARY_TYPE, tmp);
+	}
+	| IDENTIFIER {
+		PrimaryNode *tmp = new PrimaryNode(PRIMARY_IDEN, *$1);
+		$$ = new ExprNode(PRIMARY_TYPE, tmp);
 	}
 	| IdentifierListWithDot {
 		$$ = new ExprNode(IDEN_DOT, $1);
@@ -284,8 +301,11 @@ Expression:
 	| IdentifierListWithDot MethodCallWithoutName {
 		$$ = new ExprNode(IDEN_DOT_METHOD, $1, dynamic_cast<MethodCallParamsNode*>($2));
 	}
-	| Expression LBRACK Expression RBRACK {
-		$$ = new ExprNode(EXPR_ARRAY, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
+	| IDENTIFIER ArrayIndexQueryList {
+		$$ = new ExprNode(IDEN_ARRAY, *$1, $2);
+	}
+	| IdentifierListWithDot ArrayIndexQueryList {
+		$$ = new ExprNode(IDEN_DOT_ARRAY, $1, $2);
 	}
 	| IDENTIFIER MethodCallWithoutName {
 		$$ = new ExprNode(IDEN_METHOD, *$1, dynamic_cast<MethodCallParamsNode*>($2));
@@ -409,6 +429,17 @@ Expression:
 	}
 	;
 
+ArrayIndexQueryList:
+	LBRACK Expression RBRACE {
+		$$ = new vector<ExprNode*>;
+		$$->push_back(dynamic_cast<ExprNode*>($2));
+	}
+	| ArrayIndexQueryList LBRACK Expression RBRACK {
+		$1->push_back(dynamic_cast<ExprNode*>($3));
+		$$ = $1;
+	}
+	;
+
  /* Done */
 ExpressionList:
 	Expression {
@@ -418,25 +449,6 @@ ExpressionList:
 	| ExpressionList COMMA Expression {
 		$1->push_back(dynamic_cast<ExprNode*>($3));
 		$$ = $1;
-	}
-	;
-
- /* Done */
-Primary:
-	LPAREN Expression RPAREN {
-		$$ = new PrimaryNode(PRIMARY_EXPR, dynamic_cast<ExprNode*>($2));
-	}
-	| THIS {
-		$$ = new PrimaryNode(PRIMARY_THIS);
-	}
-	| SUPER {
-		$$ = new PrimaryNode(PRIMARY_SUPER);
-	}
-	| Literal {
-		$$ = new PrimaryNode(PRIMARY_LITERAL, dynamic_cast<LiteralNode*>$1);
-	}
-	| IDENTIFIER {
-		$$ = new PrimaryNode(PRIMARY_IDEN, *$1);
 	}
 	;
 

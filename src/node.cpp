@@ -515,6 +515,7 @@ ExprNode::ExprNode(ExprType type, PrimaryNode *node) {
     this->ids = NULL;
     this->methodCallParams = NULL;
     this->subExpr1 = this->subExpr2 = NULL;
+    this->ArrayIndexQueryList = NULL;
 }
 
 ExprNode::ExprNode(ExprType type, vector<IdentifierNode*> *ids) {
@@ -523,6 +524,7 @@ ExprNode::ExprNode(ExprType type, vector<IdentifierNode*> *ids) {
     this->ids = ids;
     this->methodCallParams = NULL;
     this->subExpr1 = this->subExpr2 = NULL;
+    this->ArrayIndexQueryList = NULL;
 }
 
 ExprNode::ExprNode(ExprType type, vector<IdentifierNode*> *ids, MethodCallParamsNode *methodCallParams) {
@@ -531,6 +533,7 @@ ExprNode::ExprNode(ExprType type, vector<IdentifierNode*> *ids, MethodCallParams
     this->ids = ids;
     this->methodCallParams = methodCallParams;
     this->subExpr1 = this->subExpr2 = NULL;
+    this->ArrayIndexQueryList = NULL;
 }
 
 ExprNode::ExprNode(ExprType type, const string& id, MethodCallParamsNode *methodCallParams) {
@@ -540,6 +543,7 @@ ExprNode::ExprNode(ExprType type, const string& id, MethodCallParamsNode *method
     this->ids->push_back(new IdentifierNode(id));
     this->methodCallParams = methodCallParams;
     this->subExpr1 = this->subExpr2 = NULL;
+    this->ArrayIndexQueryList = NULL;
 }
 
 ExprNode::ExprNode(ExprType type, ExprNode *node) {
@@ -549,6 +553,7 @@ ExprNode::ExprNode(ExprType type, ExprNode *node) {
     this->methodCallParams = NULL;
     this->subExpr1 = node;
     this->subExpr2 = NULL;
+    this->ArrayIndexQueryList = NULL;
 }
 
 ExprNode::ExprNode(ExprType type, ExprNode *node1, ExprNode *node2) {
@@ -558,6 +563,26 @@ ExprNode::ExprNode(ExprType type, ExprNode *node1, ExprNode *node2) {
     this->methodCallParams = NULL;
     this->subExpr1 = node1;
     this->subExpr2 = node2;
+    this->ArrayIndexQueryList = NULL;
+}
+
+ExprNode::ExprNode(ExprType type, const string& id, vector<ExprNode*> *ArrayIndexQueryList) {
+    this->type = type;
+    this->primary = NULL;
+    this->ids = new vector<IdentifierNode*>;
+    this->ids->push_back(new IdentifierNode(id));
+    this->methodCallParams = NULL;
+    this->subExpr1 = this->subExpr2 = NULL;
+    this->ArrayIndexQueryList = this->ArrayIndexQueryList;
+}
+
+ExprNode::ExprNode(ExprType type, vector<IdentifierNode*> *ids, vector<ExprNode*> *ArrayIndexQueryList) {
+    this->type = type;
+    this->primary = NULL;
+    this->ids = ids;
+    this->methodCallParams = NULL;
+    this->subExpr1 = this->subExpr2 = NULL;
+    this->ArrayIndexQueryList = this->ArrayIndexQueryList;
 }
 
 // TODO
@@ -573,6 +598,11 @@ void ExprNode::Visit() {
         this->subExpr1->Visit();
     if (this->subExpr2 != NULL)
         this->subExpr2->Visit();
+    if (this->ArrayIndexQueryList != NULL) {
+        for (auto node : *this->ArrayIndexQueryList) {
+            node->Visit();
+        }
+    }
 }
 
 // MAYBE TODO

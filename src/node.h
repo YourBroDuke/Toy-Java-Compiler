@@ -329,6 +329,7 @@ public:
     vector<IdentifierNode*> *ids;
     MethodCallParamsNode *methodCallParams;
     ExprNode *subExpr1, *subExpr2;
+    vector<ExprNode*> *ArrayIndexQueryList;
 
     void Visit();
     ExprNode(ExprType type, PrimaryNode *node);
@@ -337,6 +338,8 @@ public:
     ExprNode(ExprType type, const string& id, MethodCallParamsNode *methodCallParams);
     ExprNode(ExprType type, ExprNode *node);
     ExprNode(ExprType type, ExprNode *node1, ExprNode *node2);
+    ExprNode(ExprType type, const string& id, vector<ExprNode*> *ArrayIndexQueryList);
+    ExprNode(ExprType type, vector<IdentifierNode*> *ids, vector<ExprNode*> *ArrayIndexQueryList);
     ~ExprNode();
 
 public:
