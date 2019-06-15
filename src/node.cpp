@@ -248,6 +248,8 @@ void MethodDeclNode::codeGen(JContext *context){
     // pop method
     context->nodeStack.pop();
     auto top = context->currentFrame.top();
+    if (!top->hasReturn)
+        this->method->JStmts->push_back(NewSimpleNoParamsInstruction("return"));
     context->currentFrame.pop();
     delete top;
 
@@ -525,6 +527,7 @@ void StatementNode::codeGen(JContext *context){
             this->stat1->stmt->end()
         );
     }else if(this->type == RETURN_TYPE){
+        context->currentFrame.top()->hasReturn = true;
         this->stat1->codeGen(context);
         this->stmt->insert(
             this->stmt->end(),
@@ -553,6 +556,7 @@ void StatementNode::codeGen(JContext *context){
             break;
         }
     }else if (this->type == RETURN_NONE_TYPE){
+        context->currentFrame.top()->hasReturn = true;
         this->stmt->push_back(NewSimpleNoParamsInstruction("return"));
     }
     context->nodeStack.pop();
@@ -663,6 +667,7 @@ void ExprNode::Visit() {
 // MAYBE TODO
 void ExprNode::codeGen(JContext *context){
     debugInfo("codeGen enter ExprNode");
+    debugInfo(to_string(this->type));
     // TODO: translate all expr type
     if (this->type == IDEN_METHOD || this->type == IDEN_DOT_METHOD){
         // replace predefined 
@@ -745,6 +750,7 @@ void ExprNode::codeGen(JContext *context){
             // TODO:error handling
         }
     }
+    debugInfo("codeGen exit ExprNode");
 }
 
 MethodCallParamsNode::MethodCallParamsNode() {
@@ -806,16 +812,33 @@ void PrimaryNode::Visit() {
 
 void PrimaryNode::codeGen(JContext* context){
     debugInfo("codeGen enter PrimaryNode");
+    debugInfo(to_string(this->type));
     // TODO:
     if (this->type == PRIMARY_LITERAL){
         this->literal->codeGen(context);
         this->stmt->insert(this->stmt->end(),
             this->literal->stmt->begin(),
             this->literal->stmt->end());
+    }else if (this->type == PRIMARY_IDEN){
+        auto indexInfo = context->currentFrame.top()->varIndex[this->id->name];
+        if (indexInfo.typeName == "I" || indexInfo.typeName == "C" || indexInfo.typeName == "Z"){
+            this->stmt->push_back(NewSimpleBinInstruction("iload", to_string(indexInfo.index)));
+        }else if (indexInfo.typeName == "J"){
+            this->stmt->push_back(NewSimpleBinInstruction("lload", to_string(indexInfo.index)));
+        }else if (indexInfo.typeName == "F"){
+            this->stmt->push_back(NewSimpleBinInstruction("fload", to_string(indexInfo.index)));
+        }else if (indexInfo.typeName == "D"){
+            this->stmt->push_back(NewSimpleBinInstruction("dload", to_string(indexInfo.index)));
+        }else{
+            this->stmt->push_back(NewSimpleBinInstruction("aload", to_string(indexInfo.index)));
+        }
     }
+    debugInfo("codeGen exit PrimaryNode");
 }
 
 LiteralNode::LiteralNode(LiteralType type, const string& val) {
+    this->type = type;
+    
     if (type == CHAR_LIT) {
         // TODO
         this->intVal = 255;
@@ -868,6 +891,7 @@ void LiteralNode::Visit() {
 void LiteralNode::codeGen(JContext *context){
     debugInfo("codeGen enter LiteralNode");
     // complete
+    cout << this->type << endl;
     if (this->type == STRING_LIT){
         JInstructionStmt *s = new JInstructionStmt;
         s->opcode = new string("ldc");
@@ -875,7 +899,7 @@ void LiteralNode::codeGen(JContext *context){
         s->args->push_back(stringVal);
         this->stmt->push_back(s);
         IncrStack(context);
-        this->ExprTypeStr = "Ljava/lang/String";
+        this->ExprTypeStr = "Ljava/lang/String;";
     }else if (this->type == INTEGER_LIT || this->type == FLOAT_LIT || this->type == CHAR_LIT || this->type == BOOL_LIT){
         JInstructionStmt *s = new JInstructionStmt;
         s->opcode = new string("ldc");

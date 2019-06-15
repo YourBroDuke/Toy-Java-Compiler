@@ -56,8 +56,8 @@ vector<JInstructionStmt*>* CheckAndReplacePredefined(JContext* context, ExprNode
             string value = it.second;
             replace(key.begin(), key.end(), '.', '/');
             replace(value.begin(), value.end(), '.', '/');
-            s->args->push_back("java/lang" + key);
-            s->args->push_back("L" + value);
+            s->args->push_back("java/lang/" + key);
+            s->args->push_back("L" + value + ";");
             context->currentFrame.top()->frameNode->method->stackLimit++;
             return new vector<JInstructionStmt*>{s};
         }
@@ -79,4 +79,16 @@ string IDVecToStringDot(vector<IdentifierNode*> *vec){
 
 string IDVecToStringSlash(vector<IdentifierNode*> *vec){
     return IDVecToString(vec, '/');
+}
+
+string MakeDescriptor(vector<TypeTypeNode*> *params, TypeTypeNode* ret){
+    string desc = "(";
+    for (auto p : *params){
+        p->codeGen(nullptr);
+        desc += p->typeStr + ";";
+    }
+    desc += ")";
+    ret->codeGen(nullptr);
+    desc += ret->typeStr;
+    return desc;
 }

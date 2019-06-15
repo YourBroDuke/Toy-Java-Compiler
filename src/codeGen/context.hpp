@@ -30,5 +30,6 @@ class Frame{
         Frame(MethodDeclNode* node);
         MethodDeclNode * frameNode;
         map<string, varIndexInfo> varIndex;
+        bool hasReturn;
 };
 #endif

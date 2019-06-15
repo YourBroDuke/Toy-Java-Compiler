@@ -890,6 +890,8 @@ Literal:
 		$$ = new LiteralNode(CHAR_LIT, *$1);
 	}
 	| STRING_LITERAL {
+		cout << "hello?" << endl;
+		cout << *$1 << endl;
 		$$ = new LiteralNode(STRING_LIT, *$1);
 	}
 	| TRUE_LITERAL {
