@@ -1,5 +1,6 @@
 #include "node.h"
 #include "MetaType.h"
+#include "codeGen/predefined.hpp"
 #include "utils/utils.hpp"
 #include <iostream>
 #include <sstream>
@@ -629,45 +630,65 @@ void ExprNode::codeGen(JContext *context){
                 params->stmt->end());
         }
         context->nodeStack.pop();
+        // replace predefined 
+        auto res = CheckAndReplacePredefined(this);
+        if (res != nullptr){
+            this->stmt->insert(
+                this->stmt->end(),
+                res->begin(),
+                res->end()
+            );
+        }
 
-        // TODO: symbol table
-        JInstructionStmt *s = new JInstructionStmt;
-        s->pc = nullptr;
-        s->opcode = new string("invokevirtual");
-        string argStr = "";
-        for (auto id : *ids){
-            argStr += id->name;
-            if (id != *(ids->end()-1)){
-                argStr += '/';
+        string fullId = IDVecToStringSlash(this->ids);
+        string desc = "(";
+        for (auto s : *this->methodCallParams->exprs){
+            desc += s->ExprTypeStr + ';';
+        }
+        desc = desc.substr(0, desc.size() - 1);
+        string descriptor;
+        auto it = predefSymbolTable.find(fullId);
+        if (it != predefSymbolTable.end()){
+            for (auto s: it->second){
+                if (s.rfind(desc, 0) == 0){
+                    descriptor = s;
+                    break;
+                }
             }
         }
-        // TODO: generate descriptor
-        argStr += "(Ljava/lang/String;)V";
-        s->args->push_back(argStr);
+        // TODO: invokestatic invokespecial
+        JInstructionStmt *s = NewSimpleBinInstruction("invokevirtual", fullId + descriptor);
 
         this->stmt->push_back(s);
-
+        auto pos = descriptor.find(")");
+        this->ExprTypeStr = descriptor.substr(pos, descriptor.size() - pos);
     } else if (this->type == PRIMARY_TYPE){
         this->primary->codeGen(context);
         this->stmt->insert(this->stmt->end(),
             this->primary->stmt->begin(),
             this->primary->stmt->end()
             );
+        // get type
+        this->ExprTypeStr = this->primary->ExprTypeStr;
     } else if (this->type == OP_ADD){
         if (this->subExpr1->exprType == this->subExpr2->exprType){
             this->exprType = this->subExpr1->exprType;
             switch (this->subExpr1->exprType)
             {
             case INT_TYPE:
+                this->ExprTypeStr = "I";
                 this->stmt->push_back(NewSimpleNoParamsInstruction("iadd"));
                 break;
             case FLOAT_TYPE:
+                this->ExprTypeStr = "F";
                 this->stmt->push_back(NewSimpleNoParamsInstruction("fadd"));
                 break;
             case DOUBLE_TYPE:
+                this->ExprTypeStr = "D";
                 this->stmt->push_back(NewSimpleNoParamsInstruction("dadd"));
                 break;
             case LONG_TYPE:
+                this->ExprTypeStr = "J";
                 this->stmt->push_back(NewSimpleNoParamsInstruction("ladd"));
                 break;
             case STRING_TYPE:
@@ -809,6 +830,7 @@ void LiteralNode::codeGen(JContext *context){
         s->args->push_back(stringVal);
         this->stmt->push_back(s);
         IncrStack(context);
+        this->ExprTypeStr = "Ljava/lang/String";
     }else if (this->type == INTEGER_LIT || this->type == FLOAT_LIT || this->type == CHAR_LIT || this->type == BOOL_LIT){
         JInstructionStmt *s = new JInstructionStmt;
         s->opcode = new string("ldc");
@@ -819,6 +841,23 @@ void LiteralNode::codeGen(JContext *context){
             s->args->push_back(to_string(this->intVal));
         this->stmt->push_back(s);
         IncrStack(context);
+        switch (this->type)
+        {
+        case INTEGER_LIT:
+            this->ExprTypeStr = "I";
+            break;
+        case FLOAT_LIT:
+            this->ExprTypeStr = "F";
+            break;
+        case CHAR_LIT:
+            this->ExprTypeStr = "C";
+            break;
+        case BOOL_LIT:
+            this->ExprTypeStr = "Z";
+            break;
+        default:
+            break;
+        }
     } else {
         // NULL_LIT
         JInstructionStmt *s = new JInstructionStmt;

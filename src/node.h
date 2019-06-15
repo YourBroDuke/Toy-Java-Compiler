@@ -344,7 +344,8 @@ public:
 
 public:
     void codeGen(JContext *context);
-    ExprType exprType;
+    ExprValType exprType;
+    string ExprTypeStr;
 };
 
 class MethodCallParamsNode : public Node
@@ -378,6 +379,7 @@ public:
 
 public:
     void codeGen(JContext *context);
+    string ExprTypeStr;
 };
 
 class LiteralNode : public Statement
@@ -394,6 +396,7 @@ public:
 
 public:
     void codeGen(JContext *context);
+    string ExprTypeStr;
 
 private:
     int64_t StrToInt(const string& str);
