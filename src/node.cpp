@@ -508,9 +508,53 @@ void StatementNode::codeGen(JContext *context){
     debugInfo("codeGen enter StatementNode");
     // TODO: translate all type
     context->nodeStack.push(this);
+    if (this->type == BLOCK_TYPE){
+        this->block->codeGen(context);
+        this->stmt->insert(
+            this->stmt->end(),
+            block->Jstmts->begin(),
+            block->Jstmts->end()
+        );
+    }
     //delegate to child node
-    this->stat1->codeGen(context);
-    this->stmt = this->stat1->stmt;
+    else if (this->type == EXPR_TYPE){
+        this->stat1->codeGen(context);
+        this->stmt->insert(
+            this->stmt->end(),
+            this->stat1->stmt->begin(),
+            this->stat1->stmt->end()
+        );
+    }else if(this->type == RETURN_TYPE){
+        this->stat1->codeGen(context);
+        this->stmt->insert(
+            this->stmt->end(),
+            this->stat1->stmt->begin(),
+            this->stat1->stmt->end()
+        );
+        auto exprNode = dynamic_cast<ExprNode*>(this->stat1);
+        switch (exprNode->exprType)
+        {
+        case INT_TYPE:
+            this->stmt->push_back(NewSimpleNoParamsInstruction("ireturn"));
+            break;
+        case FLOAT_TYPE:
+            this->stmt->push_back(NewSimpleNoParamsInstruction("freturn"));
+            break;
+        case DOUBLE_TYPE:
+            this->stmt->push_back(NewSimpleNoParamsInstruction("dreturn"));
+            break;
+        case LONG_TYPE:
+            this->stmt->push_back(NewSimpleNoParamsInstruction("lreturn"));
+            break;
+        case REFERENCE_TYPE:
+            this->stmt->push_back(NewSimpleNoParamsInstruction("areturn"));
+            break;
+        default:
+            break;
+        }
+    }else if (this->type == RETURN_NONE_TYPE){
+        this->stmt->push_back(NewSimpleNoParamsInstruction("return"));
+    }
     context->nodeStack.pop();
     debugInfo("codeGen exit StatementNode");
 }
@@ -621,6 +665,15 @@ void ExprNode::codeGen(JContext *context){
     debugInfo("codeGen enter ExprNode");
     // TODO: translate all expr type
     if (this->type == IDEN_METHOD || this->type == IDEN_DOT_METHOD){
+        // replace predefined 
+        auto res = CheckAndReplacePredefined(context,this);
+        if (res != nullptr){
+            this->stmt->insert(
+                this->stmt->end(),
+                res->begin(),
+                res->end()
+            );
+        }
         // push context
         context->nodeStack.push(this);
         for (auto params : *methodCallParams->exprs){
@@ -630,15 +683,6 @@ void ExprNode::codeGen(JContext *context){
                 params->stmt->end());
         }
         context->nodeStack.pop();
-        // replace predefined 
-        auto res = CheckAndReplacePredefined(this);
-        if (res != nullptr){
-            this->stmt->insert(
-                this->stmt->end(),
-                res->begin(),
-                res->end()
-            );
-        }
 
         string fullId = IDVecToStringSlash(this->ids);
         string desc = "(";
@@ -822,6 +866,7 @@ void LiteralNode::Visit() {
 }
 
 void LiteralNode::codeGen(JContext *context){
+    debugInfo("codeGen enter LiteralNode");
     // complete
     if (this->type == STRING_LIT){
         JInstructionStmt *s = new JInstructionStmt;

@@ -925,10 +925,10 @@ int main() {
 	cout << yydebug << endl;
 	yyparse();
 	rootNode->Visit();
-	// JContext *context = new JContext(rootNode);
-	// JasminFileGenerator *g = new JasminFileGenerator(context);
-	// debugInfo("start generating...");
-	// g->Generate();
-	// cout << endl << endl << "The Target code:" << endl << endl;
-	// g->WriteTo(cout);
+	JContext *context = new JContext(rootNode);
+	JasminFileGenerator *g = new JasminFileGenerator(context);
+	debugInfo("start generating...");
+	g->Generate();
+	cout << endl << endl << "The Target code:" << endl << endl;
+	g->WriteTo(cout);
 }

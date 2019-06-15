@@ -169,6 +169,7 @@ enum ExprValType{
     FLOAT_TYPE,
     DOUBLE_TYPE,
     LONG_TYPE,
-    STRING_TYPE
+    STRING_TYPE,
+    REFERENCE_TYPE
 };
 #endif

@@ -1,6 +1,6 @@
 #include "utils.hpp"
 #include "../codeGen/Jasmin.hpp"
-#include "predefined.hpp"
+#include "../codeGen/predefined.hpp"
 #include <iostream>
 #include <sstream>
 #include <algorithm>
@@ -21,7 +21,7 @@ JInstructionStmt* NewSimpleNoParamsInstruction(string opcode){
 
 void split(const std::string& s,
     std::vector<std::string>& sv,
-                   const char delim = ' ') {
+                   const char delim) {
     sv.clear();
     std::istringstream iss(s);
     std::string temp;
@@ -33,7 +33,7 @@ void split(const std::string& s,
     return;
 }
 
-vector<JInstructionStmt*>* CheckAndReplacePredefined(ExprNode *node){
+vector<JInstructionStmt*>* CheckAndReplacePredefined(JContext* context, ExprNode *node){
     string id = "";
     for (auto s: *node->ids){
         id += s->name+".";
@@ -52,10 +52,13 @@ vector<JInstructionStmt*>* CheckAndReplacePredefined(ExprNode *node){
             node->ids->insert(node->ids->begin(), ids->begin(), ids->end());
             JInstructionStmt *s = new JInstructionStmt;
             s->opcode = new string("getstatic");
-            replace(it.first.begin(), it.first.end(), '.', '/');
-            replace(it.second.begin(), it.second.end(), '.', '/');
-            s->args->push_back("java/lang" + it.first);
-            s->args->push_back("L" + it.second);
+            string key = it.first;
+            string value = it.second;
+            replace(key.begin(), key.end(), '.', '/');
+            replace(value.begin(), value.end(), '.', '/');
+            s->args->push_back("java/lang" + key);
+            s->args->push_back("L" + value);
+            context->currentFrame.top()->frameNode->method->stackLimit++;
             return new vector<JInstructionStmt*>{s};
         }
     }
