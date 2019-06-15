@@ -1,5 +1,6 @@
 #include "node.h"
 #include "MetaType.h"
+#include "../utils/utils.hpp"
 #include <iostream>
 using namespace std;
 
@@ -207,7 +208,8 @@ void MethodDeclNode::codeGen(JContext *context){
 
     // push method
     context->nodeStack.push(this);
-    context->currentFrame = this;
+    
+    context->currentFrame.push(new Frame(this));
     
     for (auto modifier : *parNode->modifiers){
         *this->method->accessSpec += ModifierMap.at(modifier) + " ";
@@ -235,7 +237,9 @@ void MethodDeclNode::codeGen(JContext *context){
 
     // pop method
     context->nodeStack.pop();
-    context->currentFrame = nullptr;
+    auto top = context->currentFrame.top();
+    context->currentFrame.pop();
+    delete top;
 
     context->classFile->JMethods = new vector<JMethod*>;
     context->classFile->JMethods->push_back(this->method);
@@ -301,6 +305,11 @@ void FormalParamNode::codeGen(JContext *context){
     debugInfo("codeGen enter FormalParamNode");
     this->paramType->codeGen(context);
     this->paramStr = new string(this->paramType->typeStr);
+    if (this->paramType->typeStr == "J" || this->paramType->typeStr == "D"){
+        context->currentFrame.top()->frameNode->method->localLimit += 2;
+    }else{
+        context->currentFrame.top()->frameNode->method->localLimit += 1;
+    }
 }
 
 VariableDeclaratorIdNode::VariableDeclaratorIdNode(int dim, const string& name) {
@@ -447,6 +456,7 @@ void ExprNode::Visit() {
     if (this->primary != NULL) this->primary->Visit();
     if (this->ids != NULL) {
         for (auto node : *this->ids)
+
             node->Visit();
     }
     if (this->methodCallParams != NULL)
@@ -491,7 +501,31 @@ void ExprNode::codeGen(JContext *context){
             this->primary->stmt->end()
             );
     } else if (this->type == OP_ADD){
-        
+        if (this->subExpr1->exprType == this->subExpr2->exprType){
+            this->exprType = this->subExpr1->exprType;
+            switch (this->subExpr1->exprType)
+            {
+            case INT_TYPE:
+                this->stmt->push_back(NewSimpleNoParamsInstruction("iadd"));
+                break;
+            case FLOAT_TYPE:
+                this->stmt->push_back(NewSimpleNoParamsInstruction("fadd"));
+                break;
+            case DOUBLE_TYPE:
+                this->stmt->push_back(NewSimpleNoParamsInstruction("dadd"));
+                break;
+            case LONG_TYPE:
+                this->stmt->push_back(NewSimpleNoParamsInstruction("ladd"));
+                break;
+            case STRING_TYPE:
+                // TODO:
+                break;
+            default:
+                break;
+            }
+        }else{
+            // TODO:error handling
+        }
     }
 }
 
@@ -608,8 +642,8 @@ void LiteralNode::codeGen(JContext *context){
 
 
 void IncrStack(JContext* context){
-    if (context->currentFrame != nullptr){
-        context->currentFrame->method->stackLimit++;
+    if (context->currentFrame.size() != 0){
+        context->currentFrame.top()->frameNode->method->stackLimit++;
     }
 }
 
@@ -627,7 +661,14 @@ void LocalVariableDeclNode::Visit() {
 }
 
 void LocalVariableDeclNode::codeGen(JContext *context) {
-
+    // TODO: final
+    this->type->codeGen(context);
+    context->nodeStack.push(this);
+    for (auto decl : *this->decls){
+        decl->codeGen(context);
+        this->stmt->insert(this->stmt->end(), decl->stmt->begin(), decl->stmt->end());
+    }
+    context->nodeStack.pop();
 }
 
 VariableDeclaratorNode::VariableDeclaratorNode(VariableDeclaratorIdNode *idNode) {
@@ -646,7 +687,50 @@ void VariableDeclaratorNode::Visit() {
 }
 
 void VariableDeclaratorNode::codeGen(JContext *context) {
+    LocalVariableDeclNode* parNode = dynamic_cast<LocalVariableDeclNode*>(context->nodeStack.top());
 
+    // first push the initial value
+    if (this->initializer != nullptr){
+        this->initializer->codeGen(context);
+        this->stmt->insert(this->stmt->end(), 
+            initializer->stmt->begin(), 
+            initializer->stmt->end()
+            );
+    }
+
+    int size=1; 
+    if (parNode->type->typeStr == "J" || parNode->type->typeStr == "D"){
+        size = 2;
+    }
+    string typeStr = parNode->type->typeStr;
+
+    if (context->currentFrame.size() != 0){
+        // local variabel declaration
+        auto frame = context->currentFrame.top();
+        frame->varIndex[this->idNode->variableName->name].index = frame->frameNode->method->localLimit;
+        frame->frameNode->method->localLimit += size;
+        frame->varIndex[this->idNode->variableName->name].typeName = parNode->type->typeStr;
+        if (this->initializer == nullptr){
+            JInstructionStmt *s = new JInstructionStmt;
+            s->opcode = new string("ldc");
+            s->args->push_back("0");
+            this->stmt->push_back(s);
+        }
+        int index = frame->varIndex[this->idNode->variableName->name].index;
+        if (typeStr == "I"){
+            this->stmt->push_back(NewSimpleBinInstruction("istore", to_string(index)));
+        }else if (typeStr == "J"){
+            this->stmt->push_back(NewSimpleBinInstruction("lstore", to_string(index)));
+        }else if (typeStr == "F"){
+            this->stmt->push_back(NewSimpleBinInstruction("fstore", to_string(index)));
+        }else if (typeStr == "D"){
+            this->stmt->push_back(NewSimpleBinInstruction("dstore", to_string(index)));
+        }else if (typeStr.size() == 1){
+            this->stmt->push_back(NewSimpleBinInstruction("istore", to_string(index)));
+        }else{
+            this->stmt->push_back(NewSimpleBinInstruction("astore", to_string(index)));
+        }
+    }
 }
 
 VariableInitializerNode::VariableInitializerNode(int isSingleExpr, ExprNode *expr) {
@@ -671,5 +755,14 @@ void VariableInitializerNode::Visit() {
 }
 
 void VariableInitializerNode::codeGen(JContext *context) {
-
+    if (isSingleExpr){
+        expr->codeGen(context);
+        this->stmt->insert(
+            this->stmt->end(),
+            expr->stmt->begin(),
+            expr->stmt->end()
+        );
+    }else{
+        // TODO: array initialization
+    }
 }

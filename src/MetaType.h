@@ -140,4 +140,12 @@ enum InitializerType {
     EXPR_INIT,
     ARRAY_INIT
 };
+
+enum ExprType{
+    INT_TYPE,
+    FLOAT_TYPE,
+    DOUBLE_TYPE,
+    LONG_TYPE,
+    STRING_TYPE
+};
 #endif

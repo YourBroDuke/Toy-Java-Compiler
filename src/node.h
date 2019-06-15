@@ -312,6 +312,7 @@ public:
 
 public:
     void codeGen(JContext *context);
+    ExprType exprType;
 };
 
 class MethodCallParamsNode : public Node
@@ -373,10 +374,10 @@ public:
     LocalVariableDeclNode(int isFinal, TypeTypeNode *type);
     ~LocalVariableDeclNode();
     void Visit();
-    void codeGen(JContext *context);
+    void codeGen(JContext *context);  
 };
 
-class VariableDeclaratorNode : public Node
+class VariableDeclaratorNode : public Statement
 {
 public:
     VariableDeclaratorIdNode *idNode;
@@ -389,7 +390,7 @@ public:
     void Visit();
 };
 
-class VariableInitializerNode : public Node
+class VariableInitializerNode : public Statement
 {
 public:
     int isSingleExpr;
