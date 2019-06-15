@@ -6,45 +6,16 @@
 
 using namespace std;
 
-class VarNode {
-public:
-    string varName;
-    TypeTypeNode *varType;
-    vector<ModifierType> *varModifierType;
-    int scopeLv;
-    VarNode *nextVar;
-
-    VarNode(vector<ModifierType> *varModifierType, string Name, TypeTypeNode* varType, int ScopeLv){
-        this->varName = Name;
-        this->varType = varType;
-        this->varModifierType = varModifierType;
-        this->scopeLv = ScopeLv;
-    };
-    //Insert a Var and its info. into the table, including its name
-    //type, dimension of array(0 for not an array), scope level
-};
-
-class MethodNode {
-    public:
-    string methodName;
-    vector<vector<TypeTypeNode*>*> ParamsList;
-    vector<TypeTypeNode*> *returnTypeList;
-    vector<vector<ModifierType>> methodModifierTypesList;
-    MethodNode *nextMethod;
-
-    MethodNode(vector<ModifierType> *methodModifierTypesList, string MethodName, vector<FormalParamNode*> *Params, TypeTypeNode *returnType);
-};
-
 class SymbolTable {
 public:
     int CurrentScope = 0;
 
-    int HashVar(string nameOfVar){
+    int HashVar(string nameOfVar) {
         const char *tmpName = nameOfVar.c_str();
         return atoi(tmpName)%MaxSize;
     };
 
-    int HashMethod(string nameOfMethod){
+    int HashMethod(string nameOfMethod) {
         const char *tmpName = nameOfMethod.c_str();
         return atoi(tmpName)%MaxSize;
     }
@@ -150,3 +121,12 @@ public:
         return *tmpPtr;
     }
 };
+
+// SymbolTable::SymbolTable() {
+
+// }
+
+
+// void SymbolTable::PushScope() {
+
+// }
