@@ -15,6 +15,7 @@ void yyerror(const char *s) {
 }
 using namespace std;
 FileNode *rootNode = new FileNode();
+SymbolTable symTable;
 // AddVarNode()
 // AddMethodNode()
 #define DEBUG
