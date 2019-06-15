@@ -1,7 +1,7 @@
 target = lavac
 CC = g++
 CPPFLAG = -std=c++11 -Wno-deprecated-register
-OBJS = y.tab.o lex.yy.o node.o context.o Generator.o Jasmin.o utils.o
+OBJS = y.tab.o lex.yy.o node.o context.o Generator.o Jasmin.o utils.o SymbolTable.o
 
 $(target):$(OBJS)
 	$(CC) $(CPPFLAG) -o $@ $^ 
@@ -30,6 +30,9 @@ node.o:node.cpp node.h
 	$(CC) $(CPPFLAG) -c $<
 
 %.o:utils/%.cpp
+	$(CC) $(CPPFLAG) -c $<
+
+%.o:SymbolTable/%.cpp
 	$(CC) $(CPPFLAG) -c $<
  
 .PHONY: clean
