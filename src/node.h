@@ -324,7 +324,7 @@ public:
 class ExprNode : public Statement
 {
 public:
-    ExprType type;
+    ExprDeclType type;
     PrimaryNode *primary;
     vector<IdentifierNode*> *ids;
     MethodCallParamsNode *methodCallParams;
@@ -332,19 +332,20 @@ public:
     vector<ExprNode*> *ArrayIndexQueryList;
 
     void Visit();
-    ExprNode(ExprType type, PrimaryNode *node);
-    ExprNode(ExprType type, vector<IdentifierNode*> *ids);
-    ExprNode(ExprType type, vector<IdentifierNode*> *ids, MethodCallParamsNode *methodCallParams);
-    ExprNode(ExprType type, const string& id, MethodCallParamsNode *methodCallParams);
-    ExprNode(ExprType type, ExprNode *node);
-    ExprNode(ExprType type, ExprNode *node1, ExprNode *node2);
-    ExprNode(ExprType type, const string& id, vector<ExprNode*> *ArrayIndexQueryList);
-    ExprNode(ExprType type, vector<IdentifierNode*> *ids, vector<ExprNode*> *ArrayIndexQueryList);
+    ExprNode(ExprDeclType type, PrimaryNode *node);
+    ExprNode(ExprDeclType type, vector<IdentifierNode*> *ids);
+    ExprNode(ExprDeclType type, vector<IdentifierNode*> *ids, MethodCallParamsNode *methodCallParams);
+    ExprNode(ExprDeclType type, const string& id, MethodCallParamsNode *methodCallParams);
+    ExprNode(ExprDeclType type, ExprNode *node);
+    ExprNode(ExprDeclType type, ExprNode *node1, ExprNode *node2);
+    ExprNode(ExprDeclType type, const string& id, vector<ExprNode*> *ArrayIndexQueryList);
+    ExprNode(ExprDeclType type, vector<IdentifierNode*> *ids, vector<ExprNode*> *ArrayIndexQueryList);
     ~ExprNode();
 
 public:
     void codeGen(JContext *context);
-    ExprType exprType;
+    ExprValType exprType;
+    string ExprTypeStr;
 };
 
 class MethodCallParamsNode : public Node
@@ -378,6 +379,7 @@ public:
 
 public:
     void codeGen(JContext *context);
+    string ExprTypeStr;
 };
 
 class LiteralNode : public Statement
@@ -394,6 +396,7 @@ public:
 
 public:
     void codeGen(JContext *context);
+    string ExprTypeStr;
 
 private:
     int64_t StrToInt(const string& str);

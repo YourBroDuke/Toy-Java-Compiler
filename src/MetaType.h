@@ -89,7 +89,7 @@ const map<StatementType, string> StatementTypeMap_forVisit = {
     {NOTHING_TYPE, "NOTHING_TYPE"}
 };
 
-enum ExprType {
+enum ExprDeclType {
     PRIMARY_TYPE,
     IDEN_DOT,
     IDEN_METHOD,
@@ -164,7 +164,7 @@ enum InitializerType {
     ARRAY_INIT
 };
 
-enum ExprType{
+enum ExprValType{
     INT_TYPE,
     FLOAT_TYPE,
     DOUBLE_TYPE,
