@@ -473,7 +473,9 @@ InterfaceBodyDeclList:
 	;
 
 FieldDecl:
-	TypeType VariableDeclarators SEMIC { debugInfo("variable decl in class"); }
+	TypeType IDENTIFIER SEMIC {
+		$$ = new FieldDeclNode(dynamic_cast<TypeTypeNode*>$1, *$2);
+	}
 	;
  
  /* Later */

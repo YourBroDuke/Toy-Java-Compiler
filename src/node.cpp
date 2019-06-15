@@ -331,6 +331,20 @@ void TypeTypeNode::Visit() {
     cout << "It has " << this->arrayDim << " dimensions" << endl;
 }
 
+FieldDeclNode::FieldDeclNode(TypeTypeNode *type, const string& str) {
+    this->type = type;
+    this->id = new IdentifierNode(str);
+}
+
+void FieldDeclNode::Visit() {
+    this->type->Visit();
+    this->id->Visit();
+}
+
+void FieldDeclNode::codeGen(JContext *context) {
+    
+}
+
 FormalParamNode::FormalParamNode(TypeTypeNode *type, VariableDeclaratorIdNode *node) {
     this->paramType = type;
     this->declNode = node;

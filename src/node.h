@@ -218,6 +218,18 @@ public:
     string typeStr;
 };
 
+class FieldDeclNode : public Node
+{
+public:
+    TypeTypeNode *type;
+    IdentifierNode *id;
+    
+    FieldDeclNode(TypeTypeNode *type, const string& str);
+    ~FieldDeclNode();
+    void Visit();
+    void codeGen(JContext *context);
+};
+
 class FormalParamNode : public Node 
 {
 public:
