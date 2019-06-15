@@ -6,80 +6,74 @@
 
 using namespace std;
 
-
 SymbolTable::SymbolTable() {
     int initCount;
-    for( initCount = 0;initCount < MaxSize;initCount++ ){    
-        varTableHead[initCount]->nextVar = NULL;
-        methodTableHead[initCount]->nextMethod = NULL;
+    CurrentScope = 0;
+    for(initCount = 0; initCount < MaxSize;initCount++ ){    
+        varTableHead[initCount] = new VarNode();
+        methodTableHead[initCount] = new MethodNode();
     }
+    vector<ModifierType> *testModi =  new vector<ModifierType>;
+    TypeTypeNode *testTTN;
+    AddVarNode(testModi, "i", testTTN);
 }
 
 int SymbolTable::HashVar(const string& nameOfVar) {
     int count, returnNum;
     for(count = 0; count < nameOfVar.length();count++ )
         returnNum += nameOfVar[count];
-    returnNum = (returnNum * returnNum * returnNum / 2)%MaxSize;
+    return returnNum = (returnNum * returnNum * returnNum / 2)%MaxSize;
 }
 
 int SymbolTable::HashMethod(const string& nameOfMethod) {
     int count, returnMeth;
     for(count = 0; count < nameOfMethod.length();count++)
         returnMeth += nameOfMethod[count];
-    returnMeth = (returnMeth * returnMeth * returnMeth / 2)%MaxSize;
-}
-
-void SymbolTable::PopScope() {
-    CurrentScope++;
+    return returnMeth = (returnMeth * returnMeth * returnMeth / 2)%MaxSize;
 }
 
 void SymbolTable::PushScope() {
-    VarNode *currNode = varTableHead[0]->nextVar;
+    CurrentScope++;
+}
+
+void SymbolTable::PopScope() {
     int goThroughCount;
-    for( goThroughCount = 0;goThroughCount < MaxSize;goThroughCount++){
-        while(currNode->scopeLv == CurrentScope){
-            currNode = currNode->nextVar;
+    VarNode *tmpDelet;
+    for( goThroughCount = 0;goThroughCount < MaxSize;goThroughCount++) {
+        while(varTableHead[goThroughCount]->nextVar) {
+            if(varTableHead[goThroughCount]->nextVar->scopeLv == CurrentScope){
+                tmpDelet = varTableHead[goThroughCount]->nextVar;
+                varTableHead[goThroughCount]->nextVar = varTableHead[goThroughCount]->nextVar->nextVar;
+                delete tmpDelet;
+            }
         }
-        varTableHead[goThroughCount]->nextVar = currNode;
     }
     CurrentScope--;
 }
 
 int SymbolTable::AddVarNode(vector<ModifierType> *varModifierType, const string& Name, TypeTypeNode* varType){
-    VarNode *newVar;
-    newVar->varModifierType = varModifierType;
-    newVar->varName = Name;
-    newVar->varType = varType;
-    newVar->scopeLv = CurrentScope;
+    VarNode *newVar = new VarNode(varModifierType, Name, varType, CurrentScope);
 
     newVar->nextVar = varTableHead[HashVar(newVar->varName)]->nextVar;
     varTableHead[HashVar(newVar->varName)]->nextVar = newVar;
+
+    return 1;
 }
 
 int SymbolTable::AddMethodNode(vector<ModifierType> *methodModifiers, const string& Name, vector<FormalParamNode*> *Params, TypeTypeNode* returnType){
-    MethodNode *newMethod;
-    newMethod->methodName = Name;
-    int ParamCount;
-    vector<TypeTypeNode*> *TmpMethod;
-    for(ParamCount = 0;ParamCount <= Params->size(); ParamCount++){
-        TmpMethod->push_back((*Params)[ParamCount]->paramType);
-    }
-    newMethod->ParamsList.push_back(TmpMethod);
-
-    newMethod->returnTypeList.push_back(returnType);
-    newMethod->methodModifierTypesList.push_back(methodModifiers);
+    MethodNode *newMethod = new MethodNode(methodModifiers, Name, Params, returnType);
 
     newMethod->nextMethod = methodTableHead[HashMethod(newMethod->methodName)]->nextMethod;
     methodTableHead[HashMethod(newMethod->methodName)]->nextMethod = newMethod; 
+
+    return 1;
 }
 
 ReturnMethodNode *SymbolTable::SearchMethod(const string& MethodName, vector<TypeTypeNode*> *paramTypes){
     MethodNode *tmpPtr;
-    ReturnMethodNode toBeReturn;
     int TmpCount, sig;
+    ReturnMethodNode *toBeReturn;
     tmpPtr = methodTableHead[HashMethod(MethodName)]->nextMethod;
-
-    paramTypes = paramTypes;
     TmpCount = 0;
     while(tmpPtr->methodName != MethodName || tmpPtr->ParamsList[TmpCount] != paramTypes){
         TmpCount++;
@@ -91,13 +85,9 @@ ReturnMethodNode *SymbolTable::SearchMethod(const string& MethodName, vector<Typ
         }
     }
     if(sig == 1){
-        toBeReturn.methodName = tmpPtr->methodName;
-        toBeReturn.ParamsList = tmpPtr->ParamsList[TmpCount];
-        toBeReturn.methodModifierTypesList = tmpPtr->methodModifierTypesList[TmpCount];
-        toBeReturn.returnTypeList = (tmpPtr->returnTypeList)[TmpCount];
+        toBeReturn = new ReturnMethodNode(MethodName, paramTypes, (tmpPtr->returnTypeList)[TmpCount], tmpPtr->methodModifierTypesList[TmpCount]);
     }
-
-    return NULL;
+    return toBeReturn;
 }
 
 VarNode *SymbolTable::SearchVar(const string& VarName) {

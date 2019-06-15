@@ -15,12 +15,19 @@ public:
     vector<ModifierType> *varModifierType;
     int scopeLv;
     
+    VarNode() {
+        this->varType = NULL;
+        this->varModifierType = NULL;
+        this->scopeLv = 0;
+        this->nextVar = NULL;
+    }
     VarNode(vector<ModifierType> *varModifierType, const string& Name, TypeTypeNode* varType, int ScopeLv) {
         this->varName = Name;
         this->varType = varType;
         this->varModifierType = varModifierType;
         this->scopeLv = ScopeLv;
-    };
+        this->nextVar = NULL;
+    }
     //Insert a Var and its info. into the table, including its name
     //type, dimension of array(0 for not an array), scope level
     VarNode *nextVar;
@@ -33,7 +40,20 @@ public:
     vector<TypeTypeNode*> returnTypeList;
     vector<vector<ModifierType>*> methodModifierTypesList;
 
-    MethodNode(vector<ModifierType> *methodModifierTypesList, string MethodName, vector<FormalParamNode*> *Params, TypeTypeNode *returnType);
+    MethodNode() {
+        this->nextMethod = NULL;
+    }
+    MethodNode(vector<ModifierType> *methodModifierTypesList, const string& MethodName, vector<FormalParamNode*> *Params, TypeTypeNode *returnType) {
+        this->methodName = MethodName;
+        vector<TypeTypeNode*>* typeList = new vector<TypeTypeNode*>;
+        for (auto node : *Params) {
+            typeList->push_back(node->paramType);
+        }
+        this->ParamsList.push_back(typeList);
+        this->returnTypeList.push_back(returnType);
+        this->methodModifierTypesList.push_back(methodModifierTypesList);
+        this->nextMethod = NULL;
+    }
     MethodNode *nextMethod;
 };
 
@@ -43,11 +63,18 @@ public:
     vector<TypeTypeNode*> *ParamsList;
     TypeTypeNode *returnTypeList;
     vector<ModifierType> *methodModifierTypesList;
+
+    ReturnMethodNode(const string& name, vector<TypeTypeNode*> *ParamsList, TypeTypeNode *returnTypeList, vector<ModifierType> *methodModifierTypesList) {
+        this->methodName = name;
+        this->ParamsList = ParamsList;
+        this->returnTypeList = returnTypeList;
+        this->methodModifierTypesList = methodModifierTypesList;
+    }
 };
 
 class SymbolTable {
 public:
-    int CurrentScope = 0;
+    int CurrentScope;
     VarNode *varTableHead[MaxSize];
     MethodNode *methodTableHead[MaxSize];
 
@@ -55,7 +82,7 @@ public:
     
     int AddVarNode(vector<ModifierType> *varModifierType, const string& Name, TypeTypeNode* varType);
     int AddMethodNode(vector<ModifierType> *methodModifiers, const string& Name, vector<FormalParamNode*> *Params, TypeTypeNode* returnType);
-    
+
     VarNode *SearchVar(const string& VarName);
     ReturnMethodNode *SearchMethod(const string& MethodName, vector<TypeTypeNode*> *paramTypes);
 
