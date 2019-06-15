@@ -1,8 +1,5 @@
 package org.gilmour.test;
 
-import java.util.Arrays;
-import static java.lang.Math.PI.*;
-
 public class Test {
     private int testNum;
     

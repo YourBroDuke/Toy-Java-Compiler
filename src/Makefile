@@ -37,3 +37,7 @@ clean:
 .PHONY: test
 test:$(target)
 	cat testCases/op.txt | ./lavac
+
+.PHONY: test_all
+test_all:$(target)
+	cat testCases/little_program.txt | ./lavac

@@ -2,6 +2,7 @@
 #include "MetaType.h"
 #include "../utils/utils.hpp"
 #include <iostream>
+#include <sstream>
 using namespace std;
 
 #define DEBUG
@@ -93,7 +94,7 @@ TypeDeclNode::TypeDeclNode(ClassOrInterface t, ClassDeclNode *node) {
 }
 
 void TypeDeclNode::Visit() {
-    if (this->type == CLASS_TYPE){
+    if (this->type == CLASS_TYPE) {
         cout << "class" << endl;
     }else{
         cout << "interface" << endl;
@@ -163,9 +164,17 @@ void ClassBodyNode::Visit() {
         node->Visit();
 }
 
-MemberDeclNode::MemberDeclNode(Node *decl) {
+MemberDeclNode::MemberDeclNode(MemberDeclType declType, Node *decl) {
+    this->declType = declType;
+    this->modifiers = new vector<ModifierType>;
     this->mainDecl = decl;
 }
+MemberDeclNode::MemberDeclNode(MemberDeclType declType, vector<ModifierType> *modifiers, Node *decl) {
+    this->declType = declType;
+    this->modifiers = modifiers;
+    this->mainDecl = decl;
+}
+
 
 void MemberDeclNode::codeGen(JContext *context){
     debugInfo("codeGen enter MemberDeclNode");
@@ -183,10 +192,10 @@ void MemberDeclNode::Visit() {
         this->printType(crt);
     this->mainDecl->Visit();
 }
-
-MethodDeclNode::MethodDeclNode(TypeTypeNode *type, const string& name, BlockNode *block) {
+MethodDeclNode::MethodDeclNode(TypeTypeNode *type, const string& name, vector<FormalParamNode*> *params, BlockNode *block) {
     this->typeInfo = type;
     this->nodeName = new IdentifierNode(name);
+    this->params = params;
     this->methodBody = block;
 }
 
@@ -252,9 +261,42 @@ TypeTypeNode::TypeTypeNode(PrimitiveTypeOrNot type) {
     this->arrayDim = 0;
 }
 
+TypeTypeNode::TypeTypeNode(PrimitiveTypeOrNot type, int arrayDim) {
+    this->type = type;
+    this->typeInfo = NULL;
+    this->arrayDim = arrayDim;
+}
+
+TypeTypeNode::TypeTypeNode(PrimitiveTypeOrNot type, vector<IdentifierNode*> *typeInfo) {
+    this->type = type;
+    this->typeInfo = typeInfo;
+    this->arrayDim = 0;
+}
+
+TypeTypeNode::TypeTypeNode(PrimitiveTypeOrNot type, vector<IdentifierNode*> *typeInfo, int arrayDim) {
+    this->type = type;
+    this->typeInfo = typeInfo;
+    this->arrayDim = arrayDim;
+}
+
+TypeTypeNode::TypeTypeNode(PrimitiveTypeOrNot type, const string& id) {
+    this->type = type;
+    this->typeInfo = new vector<IdentifierNode*>;
+    this->typeInfo->push_back(new IdentifierNode(id));
+    this->arrayDim = 0;
+}
+
+TypeTypeNode::TypeTypeNode(PrimitiveTypeOrNot type, const string& id, int arrayDim) {
+    this->type = type;
+    this->typeInfo = new vector<IdentifierNode*>;
+    this->typeInfo->push_back(new IdentifierNode(id));
+    this->arrayDim = arrayDim;
+}
+
+// TODO
 void TypeTypeNode::printType() {
-    if (this->type == VOID_TYPE)
-        cout << "This is a void method" << endl;
+    if (this->type != NONPR_TYPE)
+        cout << "This is a " << PrimitiveTypeOrNotMap.at(this->type) << " type method" << endl;
 }
 
 void TypeTypeNode::codeGen(JContext* context){
@@ -282,13 +324,29 @@ void TypeTypeNode::codeGen(JContext* context){
     debugInfo("codeGen exit TypeTypeNode");
 }
 
+// TODO
 void TypeTypeNode::Visit() {
     this->printType();
-    cout << "It has " << this->arrayDim << " dimensions" << endl;
+
     if (this->typeInfo == NULL) return;
-    
     for (auto node : *this->typeInfo)
         node->Visit();
+    
+    cout << "It has " << this->arrayDim << " dimensions" << endl;
+}
+
+FieldDeclNode::FieldDeclNode(TypeTypeNode *type, const string& str) {
+    this->type = type;
+    this->id = new IdentifierNode(str);
+}
+
+void FieldDeclNode::Visit() {
+    this->type->Visit();
+    this->id->Visit();
+}
+
+void FieldDeclNode::codeGen(JContext *context) {
+    
 }
 
 FormalParamNode::FormalParamNode(TypeTypeNode *type, VariableDeclaratorIdNode *node) {
@@ -327,6 +385,12 @@ void VariableDeclaratorIdNode::codeGen(JContext *context){
 
 BlockNode::BlockNode() {
     this->Jstmts = new vector<JStmt*>;
+    this->stats = new vector<BlockStatementNode*>;
+}
+
+BlockNode::BlockNode(vector<BlockStatementNode*> *stats) {
+    this->Jstmts = new vector<JStmt*>;
+    this->stats = stats;
 }
 
 void BlockNode::Visit() {
@@ -370,19 +434,42 @@ void BlockStatementNode::codeGen(JContext *context){
     debugInfo("codeGen exit BlockStatementNode");
 }
 
-StatementNode::StatementNode(StatementType) {
+StatementNode::StatementNode(StatementType type) {
     this->type = type;
+    this->block = NULL;
+    this->stat1 = this->stat2 = this->stat3 = NULL;
+    this->forControl = NULL;
+}
+
+StatementNode::StatementNode(StatementType type, BlockNode *block) {
+    this->type = type;
+    this->block = block;
+    this->stat1 = this->stat2 =this->stat3 = NULL;
+    this->forControl = NULL;
 }
 
 StatementNode::StatementNode(StatementType type, Statement *stat) {
     this->type = type;
     this->stat1 = stat;
+    this->block = NULL;
+    this->stat2 = this->stat3 = NULL;
+    this->forControl = NULL;
 }
 
 StatementNode::StatementNode(StatementType type, Statement *stat1, Statement *stat2) {
     this->type = type;
     this->stat1 = stat1;
     this->stat2 = stat2;
+    this->block = NULL;
+    this->stat3 = NULL;
+    this->forControl = NULL;
+
+    // If the expression of control is empty means always true
+    if ((type == WHILE_STAT_TYPE || type == DO_WHILE_STAT_TYPE) && stat1 == NULL) {
+        LiteralNode *tmpLit = new LiteralNode(BOOL_LIT, "true");
+        PrimaryNode *tmpPri = new PrimaryNode(PRIMARY_LITERAL, tmpLit);
+        this->stat1 = new ExprNode(PRIMARY_TYPE, tmpPri);
+    }
 }
 
 StatementNode::StatementNode(StatementType type, Statement *stat1, Statement *stat2, Statement *stat3) {
@@ -390,19 +477,32 @@ StatementNode::StatementNode(StatementType type, Statement *stat1, Statement *st
     this->stat1 = stat1;
     this->stat2 = stat2;
     this->stat3 = stat3;
+    this->block = NULL;
+    this->forControl = NULL;
+}
+StatementNode::StatementNode(StatementType type, ForControlNode *forControl, Statement *stat) {
+    this->type = type;
+    this->forControl = forControl;
+    this->stat1 = stat;
+    this->block = NULL;
+    this->stat2 = this->stat3 = NULL;
 }
 
+// TODO
 void StatementNode::printType() {
-    if (this->type == EXPR_TYPE) {
-        cout << "this is a expr statement" << endl;
-    }
+    cout << "statement type : " << StatementTypeMap_forVisit.at(this->type) << endl;
 }
 
 void StatementNode::Visit() {
     this->printType();
-    this->stat1->Visit();
+    if (this->block != NULL) this->block->Visit();
+    if (this->stat1 != NULL) this->stat1->Visit();
+    if (this->stat2 != NULL) this->stat2->Visit();
+    if (this->stat3 != NULL) this->stat3->Visit();
+    if (this->forControl != NULL) this->forControl->Visit();
 }
 
+// TODO
 void StatementNode::codeGen(JContext *context){
     debugInfo("codeGen enter StatementNode");
     // TODO: translate all type
@@ -424,14 +524,35 @@ ExprNode::ExprNode(ExprType type, PrimaryNode *node) {
     this->ids = NULL;
     this->methodCallParams = NULL;
     this->subExpr1 = this->subExpr2 = NULL;
+    this->ArrayIndexQueryList = NULL;
 }
 
-ExprNode::ExprNode(ExprType type) {
+ExprNode::ExprNode(ExprType type, vector<IdentifierNode*> *ids) {
     this->type = type;
     this->primary = NULL;
-    this->ids = NULL;
+    this->ids = ids;
     this->methodCallParams = NULL;
     this->subExpr1 = this->subExpr2 = NULL;
+    this->ArrayIndexQueryList = NULL;
+}
+
+ExprNode::ExprNode(ExprType type, vector<IdentifierNode*> *ids, MethodCallParamsNode *methodCallParams) {
+    this->type = type;
+    this->primary = NULL;
+    this->ids = ids;
+    this->methodCallParams = methodCallParams;
+    this->subExpr1 = this->subExpr2 = NULL;
+    this->ArrayIndexQueryList = NULL;
+}
+
+ExprNode::ExprNode(ExprType type, const string& id, MethodCallParamsNode *methodCallParams) {
+    this->type = type;
+    this->primary = NULL;
+    this->ids = new vector<IdentifierNode*>;
+    this->ids->push_back(new IdentifierNode(id));
+    this->methodCallParams = methodCallParams;
+    this->subExpr1 = this->subExpr2 = NULL;
+    this->ArrayIndexQueryList = NULL;
 }
 
 ExprNode::ExprNode(ExprType type, ExprNode *node) {
@@ -441,6 +562,7 @@ ExprNode::ExprNode(ExprType type, ExprNode *node) {
     this->methodCallParams = NULL;
     this->subExpr1 = node;
     this->subExpr2 = NULL;
+    this->ArrayIndexQueryList = NULL;
 }
 
 ExprNode::ExprNode(ExprType type, ExprNode *node1, ExprNode *node2) {
@@ -450,8 +572,29 @@ ExprNode::ExprNode(ExprType type, ExprNode *node1, ExprNode *node2) {
     this->methodCallParams = NULL;
     this->subExpr1 = node1;
     this->subExpr2 = node2;
+    this->ArrayIndexQueryList = NULL;
 }
 
+ExprNode::ExprNode(ExprType type, const string& id, vector<ExprNode*> *ArrayIndexQueryList) {
+    this->type = type;
+    this->primary = NULL;
+    this->ids = new vector<IdentifierNode*>;
+    this->ids->push_back(new IdentifierNode(id));
+    this->methodCallParams = NULL;
+    this->subExpr1 = this->subExpr2 = NULL;
+    this->ArrayIndexQueryList = this->ArrayIndexQueryList;
+}
+
+ExprNode::ExprNode(ExprType type, vector<IdentifierNode*> *ids, vector<ExprNode*> *ArrayIndexQueryList) {
+    this->type = type;
+    this->primary = NULL;
+    this->ids = ids;
+    this->methodCallParams = NULL;
+    this->subExpr1 = this->subExpr2 = NULL;
+    this->ArrayIndexQueryList = this->ArrayIndexQueryList;
+}
+
+// TODO
 void ExprNode::Visit() {
     if (this->primary != NULL) this->primary->Visit();
     if (this->ids != NULL) {
@@ -461,8 +604,18 @@ void ExprNode::Visit() {
     }
     if (this->methodCallParams != NULL)
         this->methodCallParams->Visit();
+    if (this->subExpr1 != NULL)
+        this->subExpr1->Visit();
+    if (this->subExpr2 != NULL)
+        this->subExpr2->Visit();
+    if (this->ArrayIndexQueryList != NULL) {
+        for (auto node : *this->ArrayIndexQueryList) {
+            node->Visit();
+        }
+    }
 }
 
+// MAYBE TODO
 void ExprNode::codeGen(JContext *context){
     debugInfo("codeGen enter ExprNode");
     // TODO: translate all expr type
@@ -530,7 +683,11 @@ void ExprNode::codeGen(JContext *context){
 }
 
 MethodCallParamsNode::MethodCallParamsNode() {
+    this->exprs = new vector<ExprNode*>;
+}
 
+MethodCallParamsNode::MethodCallParamsNode(vector<ExprNode*> *exprs) {
+    this->exprs = exprs;
 }
 
 void MethodCallParamsNode::Visit() {
@@ -538,9 +695,16 @@ void MethodCallParamsNode::Visit() {
         node->Visit();
 }
 
-void MethodCallParamsNode::codeGen(JContext* context){
+void MethodCallParamsNode::codeGen(JContext* context) {
     // ignore for now
     // TODO:
+}
+
+PrimaryNode::PrimaryNode(PrimaryNodeType type) {
+    this->type = type;
+    this->expr = NULL;
+    this->literal = NULL;
+    this->id = NULL;
 }
 
 PrimaryNode::PrimaryNode(PrimaryNodeType type, ExprNode *node) {
@@ -564,9 +728,15 @@ PrimaryNode::PrimaryNode(PrimaryNodeType type, const string& name) {
     this->id = new IdentifierNode(name);
 }
 
+// TODO
 void PrimaryNode::Visit() {
-    if (literal != NULL)
+    // this->printType()
+    if (this->expr != NULL)
+        this->expr->Visit();
+    if (this->literal != NULL)
         this->literal->Visit();
+    if (this->id != NULL)
+        this->id->Visit();
 }
 
 void PrimaryNode::codeGen(JContext* context){
@@ -580,19 +750,37 @@ void PrimaryNode::codeGen(JContext* context){
     }
 }
 
-LiteralNode::LiteralNode(LiteralType type, int64_t val) {
-    this->type = type;
-    this->intVal = val;
-}
-
-LiteralNode::LiteralNode(LiteralType type, double val) {
-    this->type = type;
-    this->floatVal = val;
-}
-
 LiteralNode::LiteralNode(LiteralType type, const string& val) {
-    this->type = type;
-    this->stringVal = val;
+    if (type == CHAR_LIT) {
+        // TODO
+        this->intVal = 255;
+    } else if (type == STRING_LIT) {
+        this->stringVal = val;
+    } else if (type == BOOL_LIT) {
+        this->intVal = val=="true" ? 1 : 0;
+    } else if (type == NULL_LIT) {
+        this->stringVal = val;
+    } else if (type == INTEGER_LIT) {
+        this->intVal = StrToInt(val);
+    } else if (type == FLOAT_LIT) {
+        this->floatVal = StrToFloat(val);
+    }
+}
+
+int64_t LiteralNode::StrToInt(const string& str) {
+    int64_t ans;
+    stringstream ss;
+    ss << str;
+    ss >> ans;
+    return ans;
+}
+
+double LiteralNode::StrToFloat(const string& str) {
+    double ans;
+    stringstream ss;
+    ss << str;
+    ss >> ans;
+    return ans;
 }
 
 void LiteralNode::Visit() {
@@ -647,9 +835,10 @@ void IncrStack(JContext* context){
     }
 }
 
-LocalVariableDeclNode::LocalVariableDeclNode(int isFinal, TypeTypeNode *type) {
+LocalVariableDeclNode::LocalVariableDeclNode(int isFinal, TypeTypeNode *type, vector<VariableDeclaratorNode*> *decls) {
     this->isFinal = isFinal;
     this->type = type;
+    this->decls = decls;
 }
 
 void LocalVariableDeclNode::Visit() {
@@ -755,6 +944,7 @@ void VariableInitializerNode::Visit() {
 }
 
 void VariableInitializerNode::codeGen(JContext *context) {
+<<<<<<< HEAD
     if (isSingleExpr){
         expr->codeGen(context);
         this->stmt->insert(
@@ -765,4 +955,75 @@ void VariableInitializerNode::codeGen(JContext *context) {
     }else{
         // TODO: array initialization
     }
+=======
+
+}
+
+ForControlNode::ForControlNode(ForInitNode *init) {
+    this->init;
+    LiteralNode *tmpLit = new LiteralNode(BOOL_LIT, "true");
+    PrimaryNode *tmpPri = new PrimaryNode(PRIMARY_LITERAL, tmpLit);
+    this->CmpExpr = new ExprNode(PRIMARY_TYPE, tmpPri);
+    this->finishExprList = new vector<ExprNode*>;
+}
+
+ForControlNode::ForControlNode(ForInitNode *init, ExprNode *CmpExpr) {
+    this->init = init;
+    this->CmpExpr = CmpExpr;
+    this->finishExprList = new vector<ExprNode*>;
+}
+
+ForControlNode::ForControlNode(ForInitNode *init, ExprNode *CmpExpr, vector<ExprNode*> *exprs) {
+    this->init = init;
+    this->CmpExpr = CmpExpr;
+    this->finishExprList = exprs;
+}
+
+ForControlNode::ForControlNode(ForInitNode *init, vector<ExprNode*> *exprs) {
+    this->init = init;
+    LiteralNode *tmpLit = new LiteralNode(BOOL_LIT, "true");
+    PrimaryNode *tmpPri = new PrimaryNode(PRIMARY_LITERAL, tmpLit);
+    this->CmpExpr = new ExprNode(PRIMARY_TYPE, tmpPri);
+    this->finishExprList = exprs;
+}
+
+void ForControlNode::Visit() {
+    cout << "FOR statement:\n Init:" << endl;
+    this->init->Visit();
+    this->CmpExpr->Visit();
+    for (auto node : *this->finishExprList) {
+        node->Visit();
+    }
+}
+
+void ForControlNode::codeGen(JContext *context) {
+    
+}
+
+ForInitNode::ForInitNode(int isVarDecl, LocalVariableDeclNode *varDecl) {
+    this->isVarDecl = isVarDecl;
+    this->varDecl = varDecl;
+    this->exprs = NULL;
+}
+
+ForInitNode::ForInitNode(int isVarDecl, vector<ExprNode*> *exprs) {
+    this->isVarDecl =isVarDecl;
+    this->varDecl = NULL;
+    this->exprs = exprs;
+}
+
+void ForInitNode::Visit() {
+    if (isVarDecl) {
+        cout << "This is an local var decl" << endl;
+        this->varDecl->Visit();
+    } else {
+        for (auto node : *this->exprs) {
+            node->Visit();
+        }
+    }
+}
+
+void ForInitNode::codeGen(JContext *context) {
+
+>>>>>>> 1e6ac848dbf0aa4af63dd983e43273387a723146
 }
