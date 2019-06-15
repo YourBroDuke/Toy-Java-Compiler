@@ -98,7 +98,7 @@ string JMethod::toString(){
     for (auto stmt : *JStmts){
         ret += '\t' + stmt->toString();
     }
-    return ret + "return\n" + ".end method\n";
+    return ret + ".end method\n";
 }
 
 JInstructionStmt::JInstructionStmt(){

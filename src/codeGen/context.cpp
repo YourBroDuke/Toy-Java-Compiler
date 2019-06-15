@@ -8,3 +8,7 @@ JContext::JContext(Node* root){
 JContext::~JContext(){
     
 }
+
+Frame::Frame(MethodDeclNode* node){
+    this->frameNode = node;
+}

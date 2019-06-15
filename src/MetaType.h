@@ -20,6 +20,13 @@ enum ModifierType {
     FINAL_TYPE
 };
 
+enum MemberDeclType {
+    METHOD_DECL_TYPE,
+    FIELD_DECL_TYPE,
+    CONSTRUCTOR_DECL_TYPE,
+    INTERFACE_DECL_TYPE
+};
+
 const map<ModifierType, string> ModifierMap = {
     {PUBLIC_TYPE, "public"},
     {PROTECTED_TYPE, "protect"},
@@ -32,28 +39,28 @@ const map<ModifierType, string> ModifierMap = {
 };
 
 enum PrimitiveTypeOrNot {
-    BOOLEAN_TYPE,
-    CHAR_TYPE,
-    BYTE_TYPE,
-    SHORT_TYPE,
-    INT_TYPE,
-    LONG_TYPE,
-    FLOAT_TYPE,
-    DOUBLE_TYPE,
-    VOID_TYPE,
+    BOOLEAN_PTYPE,
+    CHAR_PTYPE,
+    BYTE_PTYPE,
+    SHORT_PTYPE,
+    INT_PTYPE,
+    LONG_PTYPE,
+    FLOAT_PTYPE,
+    DOUBLE_PTYPE,
+    VOID_PTYPE,
     NONPR_TYPE
 };
 
 const map<PrimitiveTypeOrNot, string> PrimitiveTypeOrNotMap = {
-    {BOOLEAN_TYPE, "Z"},
-    {CHAR_TYPE, "C"},
-    {BYTE_TYPE, "B"},
-    {SHORT_TYPE, "S"},
-    {INT_TYPE, "I"},
-    {LONG_TYPE, "J"},
-    {FLOAT_TYPE, "F"},
-    {DOUBLE_TYPE, "D"},
-    {VOID_TYPE, "V"},
+    {BOOLEAN_PTYPE, "Z"},
+    {CHAR_PTYPE, "C"},
+    {BYTE_PTYPE, "B"},
+    {SHORT_PTYPE, "S"},
+    {INT_PTYPE, "I"},
+    {LONG_PTYPE, "J"},
+    {FLOAT_PTYPE, "F"},
+    {DOUBLE_PTYPE, "D"},
+    {VOID_PTYPE, "V"}
 };
 
 enum StatementType {
@@ -61,18 +68,34 @@ enum StatementType {
     IF_ELSE_TYPE,
     IF_STAT_TYPE,
     FOR_STAT_TYPE,
+    WHILE_STAT_TYPE,
+    DO_WHILE_STAT_TYPE,
     RETURN_TYPE,
     RETURN_NONE_TYPE,
-    EXPR_TYPE
+    EXPR_TYPE,
+    NOTHING_TYPE
 };
 
-enum ExprType {
+const map<StatementType, string> StatementTypeMap_forVisit = {
+    {BLOCK_TYPE, "BLOCK"},
+    {IF_ELSE_TYPE, "IF_ELSE"},
+    {IF_STAT_TYPE, "ONLY_IF"},
+    {FOR_STAT_TYPE, "FOR_STAT"},
+    {WHILE_STAT_TYPE, "WHILE_STAT"},
+    {DO_WHILE_STAT_TYPE, "DO_WHILE_STAT"},
+    {RETURN_TYPE, "RETURN_TYPE"},
+    {RETURN_NONE_TYPE, "RETURN_NONE"},
+    {EXPR_TYPE, "EXPR_TYPE"},
+    {NOTHING_TYPE, "NOTHING_TYPE"}
+};
+
+enum ExprStatType {
     PRIMARY_TYPE,
     IDEN_DOT,
     IDEN_METHOD,
     IDEN_DOT_METHOD,
-    ID_ARRAY,
-    ID_DOT_ARRAY,
+    IDEN_ARRAY,
+    IDEN_DOT_ARRAY,
     PRE_INCRE,
     POST_INCRE,
     PRE_DECRE,
@@ -139,5 +162,13 @@ enum LocalVarType {
 enum InitializerType {
     EXPR_INIT,
     ARRAY_INIT
+};
+
+enum ExprValType{
+    INT_TYPE,
+    FLOAT_TYPE,
+    DOUBLE_TYPE,
+    LONG_TYPE,
+    STRING_TYPE
 };
 #endif

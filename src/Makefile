@@ -1,7 +1,7 @@
 target = lavac
 CC = g++
 CPPFLAG = -std=c++11 -Wno-deprecated-register
-OBJS = y.tab.o lex.yy.o node.o context.o Generator.o Jasmin.o
+OBJS = y.tab.o lex.yy.o node.o context.o Generator.o Jasmin.o utils.o
 
 $(target):$(OBJS)
 	$(CC) $(CPPFLAG) -o $@ $^ 
@@ -29,7 +29,9 @@ node.o:node.cpp node.h
 %.o:codeGen/%.cpp
 	$(CC) $(CPPFLAG) -c $<
 
-
+%.o:utils/%.cpp
+	$(CC) $(CPPFLAG) -c $<
+ 
 .PHONY: clean
 clean:
 	-rm -f *.o $(target) y.tab.c y.tab.h lex.yy.c *.output
@@ -37,3 +39,7 @@ clean:
 .PHONY: test
 test:$(target)
 	cat testCases/op.txt | ./lavac
+
+.PHONY: test_all
+test_all:$(target)
+	cat testCases/little_program.txt | ./lavac

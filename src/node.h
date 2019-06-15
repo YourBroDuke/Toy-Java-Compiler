@@ -39,6 +39,8 @@ class ClassBodyNode;
 class BlockStatementNode;
 class VariableInitializerNode;
 class VariableDeclaratorNode;
+class ForControlNode;
+class ForInitNode;
 
 class FileNode : public Node
 {
@@ -153,13 +155,16 @@ public:
     void codeGen(JContext* context);
 };
 
+// TODO
 class MemberDeclNode : public Node
 {
 public:
+    MemberDeclType declType;
     vector<ModifierType> *modifiers;
     Node *mainDecl;
     void Visit();
-    MemberDeclNode(Node *decl);
+    MemberDeclNode(MemberDeclType declType, Node *decl);
+    MemberDeclNode(MemberDeclType declType, vector<ModifierType> *modifiers, Node *decl);
     ~MemberDeclNode();
 private:
     void printType(ModifierType type);
@@ -179,7 +184,7 @@ public:
     BlockNode *methodBody;
 
     void Visit();
-    MethodDeclNode(TypeTypeNode *type, const string& name, BlockNode *block);
+    MethodDeclNode(TypeTypeNode *type, const string& name, vector<FormalParamNode*> *params, BlockNode *block);
     ~MethodDeclNode();
 
 private:
@@ -199,6 +204,11 @@ public:
 
     void Visit();
     TypeTypeNode(PrimitiveTypeOrNot type);
+    TypeTypeNode(PrimitiveTypeOrNot type, int arrayDim);
+    TypeTypeNode(PrimitiveTypeOrNot type, vector<IdentifierNode*> *typeInfo);
+    TypeTypeNode(PrimitiveTypeOrNot type, vector<IdentifierNode*> *typeInfo, int arrayDim);
+    TypeTypeNode(PrimitiveTypeOrNot type, const string& id);
+    TypeTypeNode(PrimitiveTypeOrNot type, const string& id, int arrayDim);
     ~TypeTypeNode();
 private:
     void printType();
@@ -206,6 +216,18 @@ private:
 public:
     void codeGen(JContext *context);
     string typeStr;
+};
+
+class FieldDeclNode : public Node
+{
+public:
+    TypeTypeNode *type;
+    IdentifierNode *id;
+    
+    FieldDeclNode(TypeTypeNode *type, const string& str);
+    ~FieldDeclNode();
+    void Visit();
+    void codeGen(JContext *context);
 };
 
 class FormalParamNode : public Node 
@@ -226,7 +248,7 @@ public:
 class VariableDeclaratorIdNode : public Node
 {
 public:
-    int arrayDim;
+    int arrayDim;   // No use now
     IdentifierNode *variableName;
 
     void Visit();
@@ -244,6 +266,7 @@ public:
 
     void Visit();
     BlockNode();
+    BlockNode(vector<BlockStatementNode*> *stats);
     ~BlockNode();
 
 public:
@@ -274,18 +297,22 @@ public:
     void codeGen(JContext* context);
 };
 
+// TODO
 class StatementNode : public Statement
 {
 public:
     StatementType type;
+    BlockNode *block;
     Statement *stat1, *stat2, *stat3;
-    Node *forControl;
+    ForControlNode *forControl;
 
     void Visit();
     StatementNode(StatementType type);
+    StatementNode(StatementType type, BlockNode *block);
     StatementNode(StatementType type, Statement *stat);
     StatementNode(StatementType type, Statement *stat1, Statement *stat2);
     StatementNode(StatementType type, Statement *stat1, Statement *stat2, Statement *stat3);
+    StatementNode(StatementType type, ForControlNode *forControl, Statement *stat);
     ~StatementNode();
 private:
     void printType();
@@ -297,21 +324,28 @@ public:
 class ExprNode : public Statement
 {
 public:
-    ExprType type;
+    ExprStatType type;
     PrimaryNode *primary;
     vector<IdentifierNode*> *ids;
     MethodCallParamsNode *methodCallParams;
     ExprNode *subExpr1, *subExpr2;
+    vector<ExprNode*> *ArrayIndexQueryList;
 
     void Visit();
-    ExprNode(ExprType type, PrimaryNode *node);
-    ExprNode(ExprType type);
-    ExprNode(ExprType type, ExprNode *node);
-    ExprNode(ExprType type, ExprNode *node1, ExprNode *node2);
+    ExprNode(ExprStatType type, PrimaryNode *node);
+    ExprNode(ExprStatType type, vector<IdentifierNode*> *ids);
+    ExprNode(ExprStatType type, vector<IdentifierNode*> *ids, MethodCallParamsNode *methodCallParams);
+    ExprNode(ExprStatType type, const string& id, MethodCallParamsNode *methodCallParams);
+    ExprNode(ExprStatType type, ExprNode *node);
+    ExprNode(ExprStatType type, ExprNode *node1, ExprNode *node2);
+    ExprNode(ExprStatType type, const string& id, vector<ExprNode*> *ArrayIndexQueryList);
+    ExprNode(ExprStatType type, vector<IdentifierNode*> *ids, vector<ExprNode*> *ArrayIndexQueryList);
     ~ExprNode();
 
 public:
     void codeGen(JContext *context);
+    ExprValType exprType;
+    string ExprTypeStr;
 };
 
 class MethodCallParamsNode : public Node
@@ -321,6 +355,7 @@ public:
 
     void Visit();
     MethodCallParamsNode();
+    MethodCallParamsNode(vector<ExprNode*> *exprs);
     ~MethodCallParamsNode();
 
 public:
@@ -336,6 +371,7 @@ public:
     IdentifierNode *id;
 
     void Visit();
+    PrimaryNode(PrimaryNodeType type);
     PrimaryNode(PrimaryNodeType type, ExprNode *node);
     PrimaryNode(PrimaryNodeType type, LiteralNode *node);
     PrimaryNode(PrimaryNodeType type, const string& id);
@@ -343,6 +379,7 @@ public:
 
 public:
     void codeGen(JContext *context);
+    string ExprTypeStr;
 };
 
 class LiteralNode : public Statement
@@ -354,13 +391,16 @@ public:
     string stringVal;
 
     void Visit();
-    LiteralNode(LiteralType type, int64_t val);
-    LiteralNode(LiteralType type, double val);
-    LiteralNode(LiteralType type, const string& val);
+    LiteralNode(LiteralType type, const string& str);
     ~LiteralNode();
 
 public:
     void codeGen(JContext *context);
+    string ExprTypeStr;
+
+private:
+    int64_t StrToInt(const string& str);
+    double StrToFloat(const string& str);
 };
 
 class LocalVariableDeclNode : public Statement
@@ -370,13 +410,13 @@ public:
     TypeTypeNode *type;
     vector<VariableDeclaratorNode*> *decls;
     
-    LocalVariableDeclNode(int isFinal, TypeTypeNode *type);
+    LocalVariableDeclNode(int isFinal, TypeTypeNode *type, vector<VariableDeclaratorNode*> *decls);
     ~LocalVariableDeclNode();
     void Visit();
-    void codeGen(JContext *context);
+    void codeGen(JContext *context);  
 };
 
-class VariableDeclaratorNode : public Node
+class VariableDeclaratorNode : public Statement
 {
 public:
     VariableDeclaratorIdNode *idNode;
@@ -389,7 +429,7 @@ public:
     void Visit();
 };
 
-class VariableInitializerNode : public Node
+class VariableInitializerNode : public Statement
 {
 public:
     int isSingleExpr;
@@ -402,6 +442,35 @@ public:
     void Visit();
     void codeGen(JContext *context);
 };
+
+class ForControlNode : public Node {
+public:
+    ForInitNode *init;
+    ExprNode *CmpExpr;
+    vector<ExprNode*> *finishExprList;
+
+    ForControlNode(ForInitNode *init);
+    ForControlNode(ForInitNode *init, ExprNode *CmpExpr);
+    ForControlNode(ForInitNode *init, ExprNode *CmpExpr, vector<ExprNode*> *exprs);
+    ForControlNode(ForInitNode *init, vector<ExprNode*> *exprs);
+    ~ForControlNode();
+    void Visit();
+    void codeGen(JContext *context);
+};
+
+class ForInitNode : public Node {
+public:
+    int isVarDecl;
+    LocalVariableDeclNode *varDecl;
+    vector<ExprNode*> *exprs;
+
+    ForInitNode(int isVarDecl, LocalVariableDeclNode *varDecl);
+    ForInitNode(int isVarDecl, vector<ExprNode*> *exprs);
+    ~ForInitNode();
+    void Visit();
+    void codeGen(JContext *context);
+};
+
 
 void IncrStack(JContext* context);
 

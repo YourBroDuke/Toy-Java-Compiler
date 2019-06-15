@@ -16,7 +16,12 @@ public:
     int scopeLv;
     VarNode *nextVar;
 
-    VarNode(vector<ModifierType> *varModifierType, string Name, TypeTypeNode* varType, int ScopeLv);
+    VarNode(vector<ModifierType> *varModifierType, string Name, TypeTypeNode* varType, int ScopeLv){
+        this->varName = Name;
+        this->varType = varType;
+        this->varModifierType = varModifierType;
+        this->scopeLv = ScopeLv;
+    };
     //Insert a Var and its info. into the table, including its name
     //type, dimension of array(0 for not an array), scope level
 };
