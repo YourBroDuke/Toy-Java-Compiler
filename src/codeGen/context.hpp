@@ -7,6 +7,7 @@
 using namespace std;
 class Node;
 class MethodDeclNode;
+class Frame;
 class JContext{
     public:
         Node* root;
