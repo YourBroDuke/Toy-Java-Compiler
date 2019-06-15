@@ -7,3 +7,4 @@ y.tab.*
 lex.yy.*
 src/y.output
 src/ToyParser.output
+src/SymbolTable/.DS_Store

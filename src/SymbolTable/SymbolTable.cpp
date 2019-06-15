@@ -13,20 +13,24 @@ SymbolTable::SymbolTable() {
         varTableHead[initCount] = new VarNode();
         methodTableHead[initCount] = new MethodNode();
     }
-    vector<ModifierType> *testModi =  new vector<ModifierType>;
-    TypeTypeNode *testTTN;
-    AddVarNode(testModi, "i", testTTN);
+    
+    // vector<ModifierType> *testModi =  new vector<ModifierType>;
+    // TypeTypeNode *testTTN = new TypeTypeNode(LONG_PTYPE);
+    // AddVarNode(testModi, "i", testTTN);
+    // AddMethodNode(testModi, "j", new vector<FormalParamNode*>, testTTN);
+    // cout << SearchMethod("j", new vector<TypeTypeNode*>)->methodName << endl;
 }
 
+
 int SymbolTable::HashVar(const string& nameOfVar) {
-    int count, returnNum;
+    int count, returnNum = 0;
     for(count = 0; count < nameOfVar.length();count++ )
         returnNum += nameOfVar[count];
     return returnNum = (returnNum * returnNum * returnNum / 2)%MaxSize;
 }
 
 int SymbolTable::HashMethod(const string& nameOfMethod) {
-    int count, returnMeth;
+    int count, returnMeth = 0;
     for(count = 0; count < nameOfMethod.length();count++)
         returnMeth += nameOfMethod[count];
     return returnMeth = (returnMeth * returnMeth * returnMeth / 2)%MaxSize;
@@ -75,31 +79,49 @@ ReturnMethodNode *SymbolTable::SearchMethod(const string& MethodName, vector<Typ
     ReturnMethodNode *toBeReturn;
     tmpPtr = methodTableHead[HashMethod(MethodName)]->nextMethod;
     TmpCount = 0;
-    while(tmpPtr->methodName != MethodName || tmpPtr->ParamsList[TmpCount] != paramTypes){
-        TmpCount++;
-        tmpPtr = tmpPtr->nextMethod;
-        if(TmpCount > paramTypes->size()){
-            sig = 0;
-            printf("No such method\n");
+
+    while (tmpPtr) {
+        if (tmpPtr->methodName == MethodName)
             break;
+        tmpPtr = tmpPtr->nextMethod;
+    }
+    if (tmpPtr == NULL) return NULL;
+
+    for (int i = 0; i < tmpPtr->ParamsList.size(); i++) {
+        int match = 1;
+        if (tmpPtr->ParamsList[i]->size() != paramTypes->size()) match = 0;
+        else {
+            for (int j = 0; j < tmpPtr->ParamsList[i]->size(); j++) {
+                TypeTypeNode *t1 = (*tmpPtr->ParamsList[i])[j], *t2 = (*paramTypes)[j];
+
+                if (t1->type != t2->type || t1->arrayDim != t2->arrayDim) match = 0;
+                else {
+                    if (t1->type == NONPR_TYPE) {
+                        if (t1->typeInfo->size() != t2->typeInfo->size()) match = 0;
+                        else {
+                            for (int k = 0; k < t1->typeInfo->size(); k++) {
+                                if ( (*t1->typeInfo)[k]->name != (*t1->typeInfo)[k]->name )
+                                    match = 0;
+                            }
+                        }
+                    }
+                }
+            }
         }
+        if (match == 1) return new ReturnMethodNode(MethodName, paramTypes, tmpPtr->returnTypeList[i], tmpPtr->methodModifierTypesList[i]);
     }
-    if(sig == 1){
-        toBeReturn = new ReturnMethodNode(MethodName, paramTypes, (tmpPtr->returnTypeList)[TmpCount], tmpPtr->methodModifierTypesList[TmpCount]);
-    }
-    return toBeReturn;
+
+    return NULL;
 }
 
 VarNode *SymbolTable::SearchVar(const string& VarName) {
-    VarNode *tmpPtr;
-    
-    tmpPtr = varTableHead[HashVar(VarName)]->nextVar;
-    while( tmpPtr->varName != VarName ) {
+    cout << HashVar(VarName) << endl;
+    VarNode *tmpPtr = varTableHead[HashVar(VarName)]->nextVar;
+
+    while (tmpPtr) {
+        if (tmpPtr->varName == VarName)
+            return tmpPtr;
         tmpPtr = tmpPtr->nextVar;
-        if(tmpPtr == NULL) {
-            printf("No such variable\n");
-            return NULL;
-        }
     }
-    return tmpPtr;
+    return NULL;
 }

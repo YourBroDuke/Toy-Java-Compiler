@@ -75,8 +75,8 @@ public:
 class SymbolTable {
 public:
     int CurrentScope;
-    VarNode *varTableHead[MaxSize];
-    MethodNode *methodTableHead[MaxSize];
+    VarNode* varTableHead[MaxSize];
+    MethodNode* methodTableHead[MaxSize];
 
     SymbolTable();
     
