@@ -600,7 +600,7 @@ void StatementNode::codeGen(JContext *context){
             this->stat1->stmt->end()
         );
         string label = "L" + context->currentFrame.top()->labelCounter++;
-        this->stmt->push_back(NewSimpleBinInstruction("ifeq", label));
+        this->stmt->push_back(NewSimpleBinInstruction(IfOpcodeByExprType(dynamic_cast<ExprNode*>(this->stat1)), label));
         this->stat2->codeGen(context);
         this->stmt->insert(
             this->stmt->end(),
@@ -622,7 +622,7 @@ void StatementNode::codeGen(JContext *context){
             this->stat1->stmt->end()
         );
         string L1 = "L" + context->currentFrame.top()->labelCounter++;
-        this->stmt->push_back(NewSimpleBinInstruction("ifeq", L1));
+        this->stmt->push_back(NewSimpleBinInstruction(IfOpcodeByExprType(dynamic_cast<ExprNode*>(this->stat1)), L1));
         this->stat2->codeGen(context);
         this->stmt->insert(
             this->stmt->end(),
@@ -649,7 +649,7 @@ void StatementNode::codeGen(JContext *context){
             this->stat1->stmt->end()
         );
         string L2 = "L" + context->currentFrame.top()->labelCounter++;
-        this->stmt->push_back(NewSimpleBinInstruction("ifeq", L2));
+        this->stmt->push_back(NewSimpleBinInstruction(IfOpcodeByExprType(dynamic_cast<ExprNode*>(this->stat1)), L2));
         this->stat2->codeGen(context);
         this->stmt->insert(
             this->stmt->end(),
@@ -679,7 +679,7 @@ void StatementNode::codeGen(JContext *context){
             forControl->CmpExpr->stmt->begin(),
             forControl->CmpExpr->stmt->end()
         );
-        this->stmt->push_back(NewSimpleBinInstruction("ifeq", L2));
+        this->stmt->push_back(NewSimpleBinInstruction(IfOpcodeByExprType(this->forControl->CmpExpr), L2));
         this->stat1->codeGen(context);
         this->stmt->insert(
             this->stmt->end(),
@@ -1018,6 +1018,57 @@ void ExprNode::codeGen(JContext *context){
             }
         }else{
             // TODO:error handling
+        }
+    } else if (this->type == OP_EQ || this->type == OP_LT || this->type == OP_GT || this->type == OP_LTOE || this->type == OP_GTOE){
+        switch (this->subExpr1->exprType)
+        {
+        case INT_TYPE:{
+            this->stmt->push_back(NewSimpleNoParamsInstruction("isub"));
+            // string L1 = "L" + context->currentFrame.top()->labelCounter++;
+            // string L2 = "L" + context->currentFrame.top()->labelCounter++;
+            // this->stmt->push_back(NewSimpleBinInstruction("ifeq", L1));
+            // this->stmt->push_back(NewSimpleBinInstruction("ldc", "0"));
+            // this->stmt->push_back(NewSimpleBinInstruction("goto", L2));
+            // this->stmt->push_back(new JLabel(L1));
+            // this->stmt->push_back(NewSimpleBinInstruction("ldc", "1"));
+            // this->stmt->push_back(new JLabel(L2));
+        }
+            break;
+        case LONG_TYPE:
+            this->stmt->push_back(NewSimpleNoParamsInstruction("lcmp"));
+            break;
+        case FLOAT_TYPE:
+            this->stmt->push_back(NewSimpleNoParamsInstruction("fcmpg"));
+            break;
+        case DOUBLE_TYPE:
+            this->stmt->push_back(NewSimpleNoParamsInstruction("dcmpg"));
+            break;
+        
+        default:
+            break;
+        }
+    } else if (this->type == OP_AND){
+        switch (this->subExpr1->exprType)
+        {
+        case INT_TYPE:
+            this->stmt->push_back(NewSimpleNoParamsInstruction("iand"));
+            break;
+        case LONG_TYPE:
+            this->stmt->push_back(NewSimpleNoParamsInstruction("land"));
+        default:
+            break;
+        }
+    }else if (this->type == OP_OR){
+        switch (this->subExpr1->exprType)
+        {
+        case INT_TYPE:
+            this->stmt->push_back(NewSimpleNoParamsInstruction("ior"));
+            break;
+        case LONG_TYPE:
+            this->stmt->push_back(NewSimpleNoParamsInstruction("lor"));
+            break;
+        default:
+            break;
         }
     }
     debugInfo("codeGen exit ExprNode");

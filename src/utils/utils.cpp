@@ -92,3 +92,24 @@ string MakeDescriptor(vector<TypeTypeNode*> *params, TypeTypeNode* ret){
     desc += ret->typeStr;
     return desc;
 }
+
+string IfOpcodeByExprType(ExprNode* node){
+    switch (node->type)
+    {
+    case OP_LT:
+        return "iflt";
+        break;
+    case OP_GT:
+        return "ifgt";
+    case OP_LTOE:
+        return "ifle";
+    case OP_GTOE:
+        return "ifge";
+    case OP_EQ:
+        return "ifeq";
+    case OP_NEQ:
+        return "ifneq";
+    default:
+        return "ifeq";
+    }
+}
