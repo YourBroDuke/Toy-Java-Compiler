@@ -61,14 +61,17 @@ class ReturnMethodNode {
 public:
     string methodName;
     vector<TypeTypeNode*> *ParamsList;
-    TypeTypeNode *returnTypeList;
+    TypeTypeNode *returnType;
     vector<ModifierType> *methodModifierTypesList;
 
-    ReturnMethodNode(const string& name, vector<TypeTypeNode*> *ParamsList, TypeTypeNode *returnTypeList, vector<ModifierType> *methodModifierTypesList) {
+    ReturnMethodNode(const string& name, vector<TypeTypeNode*> *ParamsList, TypeTypeNode *returnType, vector<ModifierType> *methodModifierTypesList) {
         this->methodName = name;
         this->ParamsList = ParamsList;
-        this->returnTypeList = returnTypeList;
+        this->returnType = returnType;
         this->methodModifierTypesList = methodModifierTypesList;
+    }
+    ~ReturnMethodNode() {
+
     }
 };
 
@@ -79,17 +82,18 @@ public:
     MethodNode* methodTableHead[MaxSize];
 
     SymbolTable();
+
+    void PushScope();
+    void PopScope();
     
     int AddVarNode(vector<ModifierType> *varModifierType, const string& Name, TypeTypeNode* varType);
     int AddMethodNode(vector<ModifierType> *methodModifiers, const string& Name, vector<FormalParamNode*> *Params, TypeTypeNode* returnType);
 
     VarNode *SearchVar(const string& VarName);
     ReturnMethodNode *SearchMethod(const string& MethodName, vector<TypeTypeNode*> *paramTypes);
-
+    ReturnMethodNode *SearchMethod(const string& MethodName, vector<FormalParamNode*> *Params);
+    ReturnMethodNode *SearchMethod(const string& MethodName, vector<ExprNode*> *exprs);
 private:
     int HashVar(const string& nameOfVar);
     int HashMethod(const string& nameOfMethod);
-
-    void PushScope();
-    void PopScope();
 };

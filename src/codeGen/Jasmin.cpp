@@ -132,3 +132,7 @@ string JasminFile::toString(){
 JLabel::JLabel(string name){
     this->labelName = new string(name);
 }
+
+string JLabel::toString(){
+    return *this->labelName + ":";
+}

@@ -73,7 +73,7 @@ int SymbolTable::AddMethodNode(vector<ModifierType> *methodModifiers, const stri
     return 1;
 }
 
-ReturnMethodNode *SymbolTable::SearchMethod(const string& MethodName, vector<TypeTypeNode*> *paramTypes){
+ReturnMethodNode *SymbolTable::SearchMethod(const string& MethodName, vector<TypeTypeNode*> *paramTypes) {
     MethodNode *tmpPtr;
     int TmpCount, sig;
     ReturnMethodNode *toBeReturn;
@@ -112,6 +112,22 @@ ReturnMethodNode *SymbolTable::SearchMethod(const string& MethodName, vector<Typ
     }
 
     return NULL;
+}
+
+ReturnMethodNode *SymbolTable::SearchMethod(const string& MethodName, vector<FormalParamNode*> *Params) {
+    vector<TypeTypeNode*> paramTypes;
+    for (auto node : *Params) {
+        paramTypes.push_back(node->paramType);
+    }
+    return SearchMethod(MethodName, &paramTypes);
+}
+
+ReturnMethodNode *SymbolTable::SearchMethod(const string& MethodName, vector<ExprNode*> *exprs) {
+    vector<TypeTypeNode*> paramTypes;
+    for (auto node : *exprs) {
+        paramTypes.push_back(node->valType);
+    }
+    return SearchMethod(MethodName, &paramTypes);
 }
 
 VarNode *SymbolTable::SearchVar(const string& VarName) {
