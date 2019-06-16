@@ -4,8 +4,9 @@
 #include "utils/utils.hpp"
 #include <iostream>
 #include <sstream>
+#include "SymbolTable/SymbolTable.h"
 using namespace std;
-
+extern SymbolTable symTable;
 #define DEBUG
 
 void debugInfo(const string& info){
@@ -366,6 +367,10 @@ void FormalParamNode::codeGen(JContext *context){
     debugInfo("codeGen enter FormalParamNode");
     this->paramType->codeGen(context);
     this->paramStr = new string(this->paramType->typeStr);
+    string id = this->declNode->variableName->name;
+    auto crtFrame = context->currentFrame.top();
+    crtFrame->varIndex[id].index = crtFrame->frameNode->method->localLimit;
+    crtFrame->varIndex[id].typeName = this->paramType->typeStr;
     if (this->paramType->typeStr == "J" || this->paramType->typeStr == "D"){
         context->currentFrame.top()->frameNode->method->localLimit += 2;
     }else{
@@ -690,6 +695,7 @@ void ExprNode::codeGen(JContext *context){
         context->nodeStack.pop();
 
         string fullId = IDVecToStringSlash(this->ids);
+        string fullDotId = IDVecToStringDot(this->ids);
         string desc = "(";
         for (auto s : *this->methodCallParams->exprs){
             desc += s->ExprTypeStr + ';';
@@ -704,6 +710,9 @@ void ExprNode::codeGen(JContext *context){
                     break;
                 }
             }
+        }else {
+            //auto res = symTable.SearchMethod(fullDotId, this->methodCallParams->)
+            // TODO:
         }
         // TODO: invokestatic invokespecial
         JInstructionStmt *s = NewSimpleBinInstruction("invokevirtual", fullId + descriptor);
