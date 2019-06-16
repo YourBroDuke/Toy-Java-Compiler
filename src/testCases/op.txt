@@ -3,7 +3,10 @@ package org.gilmour.test;
 public class test {
 	public static void main(String[] args) {
 		int a=1, b;
+		test i;
+		bool d;
 		b = 2;
+		c = a + b;
 		int c = AddTwoInt(a, b);
 		System.out.println(c);
 	}

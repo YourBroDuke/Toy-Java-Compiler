@@ -718,6 +718,7 @@ void StatementNode::codeGen(JContext *context){
                 expr->stmt->end()
             );
         }
+        this->stmt->push_back(NewSimpleBinInstruction("goto", L1));
         this->stmt->push_back(new JLabel(L2));
     }
     context->nodeStack.pop();

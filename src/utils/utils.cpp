@@ -97,14 +97,14 @@ string IfOpcodeByExprType(ExprNode* node){
     switch (node->type)
     {
     case OP_LT:
-        return "ifgt";
+        return "ifge";
         break;
     case OP_GT:
-        return "iflt";
-    case OP_LTOE:
-        return "ifge";
-    case OP_GTOE:
         return "ifle";
+    case OP_LTOE:
+        return "ifgt";
+    case OP_GTOE:
+        return "iflt";
     case OP_EQ:
         return "ifeq";
     case OP_NEQ:

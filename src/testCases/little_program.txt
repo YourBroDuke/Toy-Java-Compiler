@@ -4,13 +4,15 @@ public class Test {
     
     public static void main(String[] args) {
         float testNum;
-        int i = 1;
+        int i = 2+3;
+        int _j = 1;
         float j = 3.0;
-        i++;
-	    for (int _i = 0; _i < i; _i=_i+1) {
-            System.out.println("Hello World!");
-        }
 
+	    for (int _i = 0; _i < i; _i=_i+1) {
+            System.out.println(_j);
+            _j = _j+2;
+        }
+        System.out.println("Hello World!");
         if (i == 0) {
             testNum = j+testNum;
         } else {
