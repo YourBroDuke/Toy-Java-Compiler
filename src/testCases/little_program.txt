@@ -13,9 +13,9 @@ public class Test {
         }
 
         if (_i == 0) {
-            test_num = i;
+            testNum = i;
         } else {
-            test_num = j;
+            testNum = j;
         }
         return 0;
     }

@@ -56,6 +56,8 @@ void SymbolTable::PopScope() {
                 tmpDelet = varTableHead[goThroughCount]->nextVar;
                 varTableHead[goThroughCount]->nextVar = varTableHead[goThroughCount]->nextVar->nextVar;
                 delete tmpDelet;
+            } else {
+                break;
             }
         }
     }
@@ -72,11 +74,28 @@ int SymbolTable::AddVarNode(vector<ModifierType> *varModifierType, const string&
 }
 
 int SymbolTable::AddMethodNode(vector<ModifierType> *methodModifiers, const string& Name, vector<FormalParamNode*> *Params, TypeTypeNode* returnType){
-    MethodNode *newMethod = new MethodNode(methodModifiers, Name, Params, returnType);
+    MethodNode *tmpPtr = methodTableHead[HashMethod(Name)]->nextMethod;
+    while (tmpPtr) {
+        if (tmpPtr->methodName == Name)
+            break;
+        tmpPtr = tmpPtr->nextMethod;
+    }
 
-    newMethod->nextMethod = methodTableHead[HashMethod(newMethod->methodName)]->nextMethod;
-    methodTableHead[HashMethod(newMethod->methodName)]->nextMethod = newMethod; 
+    if (tmpPtr == NULL) {
+        MethodNode *newMethod = new MethodNode(methodModifiers, Name, Params, returnType);
 
+        newMethod->nextMethod = methodTableHead[HashMethod(newMethod->methodName)]->nextMethod;
+        methodTableHead[HashMethod(newMethod->methodName)]->nextMethod = newMethod; 
+    } else {
+        tmpPtr->methodModifierTypesList.push_back(methodModifiers);
+        vector<TypeTypeNode*> *crt = new vector<TypeTypeNode*>;
+        for (auto node : *Params) {
+            crt->push_back(node->paramType);
+        }
+        tmpPtr->ParamsList.push_back(crt);
+        tmpPtr->returnTypeList.push_back(returnType);
+    }
+    
     return 1;
 }
 

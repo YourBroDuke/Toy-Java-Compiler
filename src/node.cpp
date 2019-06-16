@@ -447,6 +447,7 @@ void BlockNode::Visit() {
     for (auto node : *this->stats) {
         cout << "node:" << node << endl;
         node->Visit();
+        cout << "11" << endl;
     }
     symTable.PopScope();
 }
@@ -821,6 +822,7 @@ void ExprNode::Visit() {
     if (this->type == IDEN_METHOD || this->type == IDEN_DOT_METHOD) {
         string methodName = IdsToString();
         cout << IdsToString() << endl;
+        cout << "1" << endl;
         ReturnMethodNode *rtn = symTable.SearchMethod( methodName, this->methodCallParams->exprs);
         if (rtn == NULL) {
             string errorStr = "Error : Unrecognized method call - " + methodName;
@@ -939,6 +941,7 @@ void ExprNode::Visit() {
             break;
         }
     }
+    cout << "out" << endl;
 }
 
 string ExprNode::IdsToString() {
