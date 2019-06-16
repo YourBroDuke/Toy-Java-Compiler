@@ -369,6 +369,9 @@ public:
     void codeGen(JContext *context);
     ExprValType exprType;
     string ExprTypeStr;
+
+private:
+    string IdsToString();
 };
 
 class MethodCallParamsNode : public Node
