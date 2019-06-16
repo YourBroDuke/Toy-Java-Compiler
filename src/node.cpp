@@ -362,7 +362,22 @@ void FieldDeclNode::Visit() {
 }
 
 void FieldDeclNode::codeGen(JContext *context) {
-    
+    debugInfo("codeGen enter FieldDeclNode");
+    JField *f = new JField;
+    auto parNode = dynamic_cast<MemberDeclNode*>(context->nodeStack.top());
+    context->nodeStack.pop();
+    f->modifier = new string();
+    for (auto modifier : *parNode->modifiers){
+        *f->modifier += ModifierMap.at(modifier) + " ";
+    }
+    f->id = new string(this->id->name);
+    this->type->codeGen(context);
+    f->descriptor = new string(this->type->typeStr);
+    if (context->classFile->JFields == nullptr){
+        context->classFile->JFields = new vector<JField*>;
+    }
+    context->classFile->JFields->push_back(f);
+    debugInfo("codeGen exit FieldDeclNode");
 }
 
 FormalParamNode::FormalParamNode(TypeTypeNode *type, VariableDeclaratorIdNode *node) {
@@ -594,7 +609,8 @@ void StatementNode::codeGen(JContext *context){
             this->stat1->stmt->begin(),
             this->stat1->stmt->end()
         );
-        string label = "L" + context->currentFrame.top()->labelCounter++;
+        string label = GenLabel(context);
+        debugInfo(label);
         this->stmt->push_back(NewSimpleBinInstruction(IfOpcodeByExprType(dynamic_cast<ExprNode*>(this->stat1)), label));
         this->stat2->codeGen(context);
         this->stmt->insert(
@@ -616,7 +632,7 @@ void StatementNode::codeGen(JContext *context){
             this->stat1->stmt->begin(),
             this->stat1->stmt->end()
         );
-        string L1 = "L" + context->currentFrame.top()->labelCounter++;
+        string L1 = GenLabel(context);
         this->stmt->push_back(NewSimpleBinInstruction(IfOpcodeByExprType(dynamic_cast<ExprNode*>(this->stat1)), L1));
         this->stat2->codeGen(context);
         this->stmt->insert(
@@ -624,7 +640,7 @@ void StatementNode::codeGen(JContext *context){
             this->stat2->stmt->begin(),
             this->stat2->stmt->end()
         );
-        string L2 = "L" + context->currentFrame.top()->labelCounter++;
+        string L2 = GenLabel(context);
         this->stmt->push_back(NewSimpleBinInstruction("goto", L2));
         this->stmt->push_back(new JLabel(L1));
         this->stat3->codeGen(context);
@@ -635,7 +651,7 @@ void StatementNode::codeGen(JContext *context){
         // ifeq L2
         // ...
         // goto L1
-        string L1 = "L" + context->currentFrame.top()->labelCounter++;
+        string L1 = GenLabel(context);
         this->stmt->push_back(new JLabel(L1));
         this->stat1->codeGen(context);
         this->stmt->insert(
@@ -643,7 +659,7 @@ void StatementNode::codeGen(JContext *context){
             this->stat1->stmt->begin(),
             this->stat1->stmt->end()
         );
-        string L2 = "L" + context->currentFrame.top()->labelCounter++;
+        string L2 = GenLabel(context);
         this->stmt->push_back(NewSimpleBinInstruction(IfOpcodeByExprType(dynamic_cast<ExprNode*>(this->stat1)), L2));
         this->stat2->codeGen(context);
         this->stmt->insert(
@@ -665,8 +681,8 @@ void StatementNode::codeGen(JContext *context){
             forControl->init->stmt->begin(),
             forControl->init->stmt->end()
         );
-        string L1 = "L" + context->currentFrame.top()->labelCounter++;
-        string L2 = "L" + context->currentFrame.top()->labelCounter++;
+        string L1 = GenLabel(context);
+        string L2 = GenLabel(context);
         this->stmt->push_back(new JLabel(L1));
         this->forControl->CmpExpr->codeGen(context);
         this->stmt->insert(
@@ -907,7 +923,8 @@ void ExprNode::codeGen(JContext *context){
                 }
             }
         }else {
-            //auto res = symTable.SearchMethod(fullDotId, this->methodCallParams->)
+            auto res = symTable.SearchMethod(fullDotId, this->methodCallParams->exprs);
+            descriptor = MakeDescriptor(res->ParamsList, res->returnType);
         }
         // TODO: invokestatic invokespecial
         JInstructionStmt *s = NewSimpleBinInstruction("invokevirtual", fullId + descriptor);

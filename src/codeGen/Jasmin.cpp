@@ -119,7 +119,9 @@ string JasminFile::toString(){
     string ret = "";
     ret += jasminHeader->toString();
     if (JFields != nullptr){
-        // TODO:
+        for (auto field : *JFields){
+            ret += field->toString() + "\n";
+        }
     }
     if (JMethods != nullptr){
         for (auto method : *JMethods){
@@ -135,4 +137,8 @@ JLabel::JLabel(string name){
 
 string JLabel::toString(){
     return *this->labelName + ":";
+}
+
+string JField::toString(){
+    return ".field " + *modifier + " " + *id + " " + *descriptor;
 }

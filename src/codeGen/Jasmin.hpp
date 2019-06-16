@@ -60,7 +60,11 @@ class JasminHeader{
 }
  */
 class JField{
-    
+    public:
+        string *modifier;
+        string *id;
+        string *descriptor;
+        string toString();
 };
 
 /*

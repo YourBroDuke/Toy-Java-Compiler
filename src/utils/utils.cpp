@@ -113,3 +113,9 @@ string IfOpcodeByExprType(ExprNode* node){
         return "ifeq";
     }
 }
+
+string GenLabel(JContext *context){
+    string Label = "L";
+    Label += to_string(context->currentFrame.top()->labelCounter++);
+    return Label;
+}

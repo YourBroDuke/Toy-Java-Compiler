@@ -12,4 +12,6 @@ void split(const std::string& s,std::vector<std::string>& sv,const char delim);
 string IDVecToStringDot(vector<IdentifierNode*> *vec);
 string IDVecToStringSlash(vector<IdentifierNode*> *vec);
 string IfOpcodeByExprType(ExprNode* node);
+string MakeDescriptor(vector<TypeTypeNode*> *params, TypeTypeNode* ret);
+string GenLabel(JContext *context);
 #endif
