@@ -14,10 +14,17 @@ SymbolTable::SymbolTable() {
         methodTableHead[initCount] = new MethodNode();
     }
     
-    // vector<ModifierType> *testModi =  new vector<ModifierType>;
-    // TypeTypeNode *testTTN = new TypeTypeNode(LONG_PTYPE);
+    vector<ModifierType> *testModi =  new vector<ModifierType>;
+    TypeTypeNode *testTTN = new TypeTypeNode(INT_PTYPE);
+    FormalParamNode *fpn = new FormalParamNode(new TypeTypeNode(NONPR_TYPE, "String"), new VariableDeclaratorIdNode(0, "s"));
+    FormalParamNode *fpn1 = new FormalParamNode(new TypeTypeNode(INT_PTYPE), new VariableDeclaratorIdNode(0, "s"));
+    vector<FormalParamNode*> *can = new vector<FormalParamNode*>;
+    can->push_back(fpn);
     // AddVarNode(testModi, "i", testTTN);
-    // AddMethodNode(testModi, "j", new vector<FormalParamNode*>, testTTN);
+    AddMethodNode(testModi, "System.out.println", can, testTTN);
+    can->pop_back();
+    can->push_back(fpn1);
+    AddMethodNode(testModi, "System.out.println", can, testTTN);
     // cout << SearchMethod("j", new vector<TypeTypeNode*>)->methodName << endl;
 }
 
@@ -57,7 +64,7 @@ void SymbolTable::PopScope() {
 
 int SymbolTable::AddVarNode(vector<ModifierType> *varModifierType, const string& Name, TypeTypeNode* varType){
     VarNode *newVar = new VarNode(varModifierType, Name, varType, CurrentScope);
-
+    if (Name == "b") cout << "hehe" << endl << endl;
     newVar->nextVar = varTableHead[HashVar(newVar->varName)]->nextVar;
     varTableHead[HashVar(newVar->varName)]->nextVar = newVar;
 
@@ -86,6 +93,8 @@ ReturnMethodNode *SymbolTable::SearchMethod(const string& MethodName, vector<Typ
         tmpPtr = tmpPtr->nextMethod;
     }
     if (tmpPtr == NULL) return NULL;
+
+    cout << "finding" << endl;
 
     for (int i = 0; i < tmpPtr->ParamsList.size(); i++) {
         int match = 1;
@@ -134,7 +143,7 @@ VarNode *SymbolTable::SearchVar(const string& VarName) {
     cout << HashVar(VarName) << endl;
     VarNode *tmpPtr = varTableHead[HashVar(VarName)]->nextVar;
 
-    while (tmpPtr) {
+    while (tmpPtr != NULL) {
         if (tmpPtr->varName == VarName)
             return tmpPtr;
         tmpPtr = tmpPtr->nextVar;

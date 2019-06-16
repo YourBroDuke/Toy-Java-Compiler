@@ -173,7 +173,7 @@ enum InitializerType {
     ARRAY_INIT
 };
 
-enum ExprValType{
+enum ExprValType {
     INT_TYPE,
     FLOAT_TYPE,
     DOUBLE_TYPE,

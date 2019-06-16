@@ -372,12 +372,16 @@ FormalParamNode::FormalParamNode(TypeTypeNode *type, VariableDeclaratorIdNode *n
 
 void FormalParamNode::Visit() {
     // Semantic Check
-    if (symTable.SearchVar(this->declNode->variableName->name)->scopeLv == symTable.CurrentScope) {
+    cout << "param1" << endl;
+    VarNode *rtn = symTable.SearchVar(this->declNode->variableName->name);
+    if (rtn && rtn->scopeLv == symTable.CurrentScope) {
         string errorStr = "Erro r :Duplicate local var decl - " + this->declNode->variableName->name;
         cout << errorStr << endl;
         exit(1);
     }
+    cout << "got" << endl;
     symTable.AddVarNode(new vector<ModifierType>, this->declNode->variableName->name, paramType);
+    cout << "added" << endl;
     /* -------------- */
     this->paramType->Visit();
     this->declNode->Visit();
@@ -424,6 +428,7 @@ BlockNode::BlockNode(vector<BlockStatementNode*> *stats) {
 void BlockNode::Visit() {
     symTable.PushScope();
     for (auto node : *this->stats) {
+        cout << "node:" << node << endl;
         node->Visit();
     }
     symTable.PopScope();
@@ -794,8 +799,10 @@ void ExprNode::Visit() {
         }
     }
 
+
     if (this->type == IDEN_METHOD || this->type == IDEN_DOT_METHOD) {
         string methodName = IdsToString();
+        cout << IdsToString() << endl;
         ReturnMethodNode *rtn = symTable.SearchMethod( methodName, this->methodCallParams->exprs);
         if (rtn == NULL) {
             string errorStr = "Error : Unrecognized method call - " + methodName;
@@ -828,6 +835,7 @@ void ExprNode::Visit() {
             this->val = new ExprValInfo(0);
             this->assignable = 0;
         } else if (pmnode->type == PRIMARY_LITERAL) {
+            
             this->valType = new TypeTypeNode(LtoP_map.at(pmnode->literal->type));
             if (pmnode->literal->type == STRING_LIT) {
                 this->valType->typeInfo = new vector<IdentifierNode*>;
@@ -850,17 +858,75 @@ void ExprNode::Visit() {
             }
             this->valType = rtn->varType;
             this->val = new ExprValInfo(0);
-            this->assignable = 0;
+            this->assignable = 1;
         }
     } else {
-        // TODO
+        if (this->subExpr1->assignable == 0 
+        && (this->type == PRE_INCRE || this->type == POST_INCRE || this->type == PRE_DECRE || this->type == POST_DECRE
+        ||  this->type == OP_ASN || this->type == OP_ADD_ASN || this->type == OP_SUB_ASN || this->type == OP_MUL_ASN
+        ||  this->type == OP_DIV_ASN || this->type == OP_MOD_ASN || this->type == OP_AND_ASN || this->type == OP_OR_ASN
+        ||  this->type == OP_XOR_ASN || this->type == OP_LSHIFT_ASN || this->type == OP_RSHIFT_ASN || this->type == OP_URSHIFT_ASN)
+        ) {
+            string errorStr = "The left subexpr cannot be assigned";
+            cout << errorStr << endl;
+            cout << this->type << endl;
+            exit(1);
+        }
+        switch (this->type)
+        {
+        case PRE_INCRE:
+        case POST_INCRE:
+        case PRE_DECRE:
+        case POST_DECRE: {
+            if (subExpr1->valType->type == CHAR_PTYPE || subExpr1->valType->type == BYTE_PTYPE || subExpr1->valType->type == SHORT_PTYPE
+            ||  subExpr1->valType->type == INT_PTYPE || subExpr1->valType->type == LONG_PTYPE) {
+                this->valType = this->subExpr1->valType;
+                this->assignable = 0;
+                this->val = this->subExpr1->val;
+                break;
+            } else {
+                string errorStr = "++|--|~ cannot assign to this expr";
+                cout << errorStr << endl;
+                exit(1);
+            }
+        }
+        case TILDE_EXPR:
+        case BANG_EXPR: {
+            if (subExpr1->valType->type == CHAR_PTYPE || subExpr1->valType->type == BYTE_PTYPE || subExpr1->valType->type == SHORT_PTYPE
+            ||  subExpr1->valType->type == INT_PTYPE || subExpr1->valType->type == LONG_PTYPE || subExpr1->valType->type == BOOLEAN_PTYPE) {
+                this->valType = this->subExpr1->valType;
+                this->assignable = 0;
+                this->val = this->subExpr1->val;
+                break;
+            } else {
+                string errorStr = "! cannot be used on this statement";
+                cout << errorStr << endl;
+                exit(1);
+            }
+        }
+        case POS_EXPR:
+        case NEG_EXPR: {
+            if (subExpr1->valType->type != VOID_PTYPE && subExpr1->valType->type != NONPR_TYPE) {
+                this->valType = this->subExpr1->valType;
+                this->assignable = 0;
+                this->val = this->subExpr1->val;
+                break;
+            } else {
+                string errorStr = "! cannot be used on this statement";
+                cout << errorStr << endl;
+                exit(1);
+            }
+        }
+        default:
+            break;
+        }
     }
 }
 
 string ExprNode::IdsToString() {
     string finalName = (*this->ids)[0]->name;
     for (int i = 1; i < this->ids->size(); i++) {
-        finalName += "." + (*this->ids)[0]->name;
+        finalName += "." + (*this->ids)[i]->name;
     }
     return finalName;
 }
@@ -1158,7 +1224,8 @@ void LocalVariableDeclNode::Visit() {
     vector<ModifierType> *tmp = new vector<ModifierType>;
     if (this->isFinal) tmp->push_back(FINAL_TYPE);
     for (auto node : *this->decls) {
-        if (symTable.SearchVar(node->idNode->variableName->name)->scopeLv == symTable.CurrentScope) {
+        VarNode *rtn = symTable.SearchVar(node->idNode->variableName->name);
+        if (rtn && rtn->scopeLv == symTable.CurrentScope) {
             string errorStr = "Error : Duplicate local var decl - " + node->idNode->variableName->name;
             cout << errorStr << endl;
             exit(1);
