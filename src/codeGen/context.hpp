@@ -31,5 +31,6 @@ class Frame{
         MethodDeclNode * frameNode;
         map<string, varIndexInfo> varIndex;
         bool hasReturn;
+        int labelCounter;
 };
 #endif

@@ -85,7 +85,7 @@ string MakeDescriptor(vector<TypeTypeNode*> *params, TypeTypeNode* ret){
     string desc = "(";
     for (auto p : *params){
         p->codeGen(nullptr);
-        desc += p->typeStr + ";";
+        desc += p->typeStr;
     }
     desc += ")";
     ret->codeGen(nullptr);

@@ -124,6 +124,13 @@ class JStmt {
         virtual string toString()=0;
 };
 
+class JLabel : public JStmt{
+    public:
+        string *labelName;
+        string toString();
+        JLabel(string name);
+};
+
 class JInstructionStmt : public JStmt{
     public:
         // optional

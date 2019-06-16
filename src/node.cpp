@@ -313,7 +313,7 @@ void TypeTypeNode::codeGen(JContext* context){
         }
         this->typeStr += "L";
         if (this->typeInfo->size() == 1 && (*this->typeInfo->begin())->name == "String"){
-            this->typeStr += "java/lang/String";
+            this->typeStr += "java/lang/String;";
         }else{
             for (auto id : *this->typeInfo){
                 this->typeStr += id->name;
@@ -321,6 +321,7 @@ void TypeTypeNode::codeGen(JContext* context){
                     this->typeStr += '/';
                 }
             }
+            this->typeStr += ";";
         }
     }else{
         this->typeStr = PrimitiveTypeOrNotMap.at(this->type);
@@ -563,6 +564,111 @@ void StatementNode::codeGen(JContext *context){
     }else if (this->type == RETURN_NONE_TYPE){
         context->currentFrame.top()->hasReturn = true;
         this->stmt->push_back(NewSimpleNoParamsInstruction("return"));
+    }else if (this->type == IF_STAT_TYPE){
+        // ifeq 
+        // L1
+        this->stat1->codeGen(context);
+        this->stmt->insert(
+            this->stmt->end(),
+            this->stat1->stmt->begin(),
+            this->stat1->stmt->end()
+        );
+        string label = "L" + context->currentFrame.top()->labelCounter++;
+        this->stmt->push_back(NewSimpleBinInstruction("ifeq", label));
+        this->stat2->codeGen(context);
+        this->stmt->insert(
+            this->stmt->end(),
+            this->stat2->stmt->begin(),
+            this->stat2->stmt->end()
+        );
+        this->stmt->push_back(new JLabel(label));
+    }else if (this->type == IF_ELSE_TYPE){
+        //ifeq L1
+        //    ...
+        //   goto L2
+        //L1:
+        //  ....
+        //L2:
+        this->stat1->codeGen(context);
+        this->stmt->insert(
+            this->stmt->end(),
+            this->stat1->stmt->begin(),
+            this->stat1->stmt->end()
+        );
+        string L1 = "L" + context->currentFrame.top()->labelCounter++;
+        this->stmt->push_back(NewSimpleBinInstruction("ifeq", L1));
+        this->stat2->codeGen(context);
+        this->stmt->insert(
+            this->stmt->end(),
+            this->stat2->stmt->begin(),
+            this->stat2->stmt->end()
+        );
+        string L2 = "L" + context->currentFrame.top()->labelCounter++;
+        this->stmt->push_back(NewSimpleBinInstruction("goto", L2));
+        this->stmt->push_back(new JLabel(L1));
+        this->stat3->codeGen(context);
+        this->stmt->push_back(new JLabel(L2));
+    } else if (this->type == WHILE_STAT_TYPE){
+        // L1:
+        // ... 
+        // ifeq L2
+        // ...
+        // goto L1
+        string L1 = "L" + context->currentFrame.top()->labelCounter++;
+        this->stmt->push_back(new JLabel(L1));
+        this->stat1->codeGen(context);
+        this->stmt->insert(
+            this->stmt->end(),
+            this->stat1->stmt->begin(),
+            this->stat1->stmt->end()
+        );
+        string L2 = "L" + context->currentFrame.top()->labelCounter++;
+        this->stmt->push_back(NewSimpleBinInstruction("ifeq", L2));
+        this->stat2->codeGen(context);
+        this->stmt->insert(
+            this->stmt->end(),
+            this->stat2->stmt->begin(),
+            this->stat2->stmt->end()
+        );
+        this->stmt->push_back(NewSimpleBinInstruction("goto", L1));
+    } else if (this->type == FOR_STAT_TYPE){
+        // ... init stmts
+        // L1 cmp stmts
+        // ifeq L2
+        // block stmts
+        // finish stmts
+        // L2
+        this->forControl->init->codeGen(context);
+        this->stmt->insert(
+            this->stmt->end(),
+            forControl->init->stmt->begin(),
+            forControl->init->stmt->end()
+        );
+        string L1 = "L" + context->currentFrame.top()->labelCounter++;
+        string L2 = "L" + context->currentFrame.top()->labelCounter++;
+        this->stmt->push_back(new JLabel(L1));
+        this->forControl->CmpExpr->codeGen(context);
+        this->stmt->insert(
+            this->stmt->end(),
+            forControl->CmpExpr->stmt->begin(),
+            forControl->CmpExpr->stmt->end()
+        );
+        this->stmt->push_back(NewSimpleBinInstruction("ifeq", L2));
+        this->stat1->codeGen(context);
+        this->stmt->insert(
+            this->stmt->end(),
+            this->stat1->stmt->begin(),
+            this->stat1->stmt->end()
+        );
+        for (auto expr: *this->forControl->finishExprList){
+            expr->codeGen(context);
+            this->stmt->insert(
+                this->stmt->end(),
+                expr->stmt->begin(),
+                expr->stmt->end()
+            );
+        }
+        this->stmt->push_back(new JLabel(L2));
     }
     context->nodeStack.pop();
     debugInfo("codeGen exit StatementNode");
@@ -712,7 +818,6 @@ void ExprNode::codeGen(JContext *context){
             }
         }else {
             //auto res = symTable.SearchMethod(fullDotId, this->methodCallParams->)
-            // TODO:
         }
         // TODO: invokestatic invokespecial
         JInstructionStmt *s = NewSimpleBinInstruction("invokevirtual", fullId + descriptor);
@@ -1139,5 +1244,21 @@ void ForInitNode::Visit() {
 }
 
 void ForInitNode::codeGen(JContext *context) {
-
+    if (this->isVarDecl){
+        this->varDecl->codeGen(context);
+        this->stmt->insert(
+            this->stmt->end(),
+            this->varDecl->stmt->begin(),
+            this->varDecl->stmt->end()
+        );
+    }else{
+        for (auto expr : *this->exprs){
+            expr->codeGen(context);
+            this->stmt->insert(
+                this->stmt->end(),
+                expr->stmt->begin(),
+                expr->stmt->end()
+            );
+        }
+    }
 }

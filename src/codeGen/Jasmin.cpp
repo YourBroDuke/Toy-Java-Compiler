@@ -54,7 +54,7 @@ string JDescriptor::toString(){
     string result = "(";
 
     for (auto& s : *this->params){
-        result += s + ';';
+        result += s;
     }
 
     return result + ')' + this->ret;
@@ -127,4 +127,8 @@ string JasminFile::toString(){
         }
     }
     return ret;
+}
+
+JLabel::JLabel(string name){
+    this->labelName = new string(name);
 }

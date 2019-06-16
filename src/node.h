@@ -458,7 +458,7 @@ public:
     void codeGen(JContext *context);
 };
 
-class ForInitNode : public Node {
+class ForInitNode : public Statement {
 public:
     int isVarDecl;
     LocalVariableDeclNode *varDecl;

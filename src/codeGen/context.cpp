@@ -11,4 +11,6 @@ JContext::~JContext(){
 
 Frame::Frame(MethodDeclNode* node){
     this->frameNode = node;
+    this->hasReturn = false;
+    this->labelCounter = 0;
 }
