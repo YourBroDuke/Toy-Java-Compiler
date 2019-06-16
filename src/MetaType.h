@@ -108,12 +108,12 @@ const map<StatementType, string> StatementTypeMap_forVisit = {
 };
 
 enum ExprStatType {
-    PRIMARY_TYPE,
-    IDEN_DOT,
-    IDEN_METHOD,
-    IDEN_DOT_METHOD,
-    IDEN_ARRAY,
-    IDEN_DOT_ARRAY,
+    PRIMARY_TYPE,       //
+    IDEN_DOT,           //
+    IDEN_METHOD,        //
+    IDEN_DOT_METHOD,    //
+    IDEN_ARRAY,         //
+    IDEN_DOT_ARRAY,     //
     PRE_INCRE,
     POST_INCRE,
     PRE_DECRE,

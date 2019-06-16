@@ -795,10 +795,7 @@ void ExprNode::Visit() {
     }
 
     if (this->type == IDEN_METHOD || this->type == IDEN_DOT_METHOD) {
-        string methodName = (*this->ids)[0]->name;
-        for (int i = 1; i < this->ids->size(); i++) {
-            methodName += "." + (*this->ids)[0]->name;
-        }
+        string methodName = IdsToString();
         ReturnMethodNode *rtn = symTable.SearchMethod( methodName, this->methodCallParams->exprs);
         if (rtn == NULL) {
             string errorStr = "Error : Unrecognized method call - " + methodName;
@@ -809,10 +806,7 @@ void ExprNode::Visit() {
         this->val = new ExprValInfo(0);
         this->assignable = 0;
     } else if (this->type == IDEN_DOT || this->type == IDEN_ARRAY || this->type == IDEN_DOT_ARRAY) {
-        string varName = (*this->ids)[0]->name;
-        for (int i = 1; i < this->ids->size(); i++) {
-            varName += "." + (*this->ids)[0]->name;
-        }
+        string varName = IdsToString();
         VarNode *rtn = symTable.SearchVar(varName);
         if (rtn == NULL) {
             string errorStr = "Error : Unrecognized identifier - " + varName;
@@ -849,8 +843,26 @@ void ExprNode::Visit() {
             this->assignable = 0;
         } else if (pmnode->type == PRIMARY_IDEN) {
             VarNode *rtn = symTable.SearchVar(pmnode->id->name);
+            if (rtn == NULL) {
+                string errorStr = "Error : Unrecognized identifier - " + pmnode->id->name;
+                cout << errorStr << endl;
+                exit(1);
+            }
+            this->valType = rtn->varType;
+            this->val = new ExprValInfo(0);
+            this->assignable = 0;
         }
+    } else {
+        // TODO
     }
+}
+
+string ExprNode::IdsToString() {
+    string finalName = (*this->ids)[0]->name;
+    for (int i = 1; i < this->ids->size(); i++) {
+        finalName += "." + (*this->ids)[0]->name;
+    }
+    return finalName;
 }
 
 // MAYBE TODO
