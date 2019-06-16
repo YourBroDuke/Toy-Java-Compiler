@@ -1,9 +1,13 @@
 #include "node.h"
 #include "MetaType.h"
 #include "codeGen/predefined.hpp"
+#include "SymbolTable/SymbolTable.h"
 #include "utils/utils.hpp"
 #include <iostream>
 #include <sstream>
+
+extern SymbolTable symTable;
+
 using namespace std;
 
 #define DEBUG
@@ -201,10 +205,18 @@ MethodDeclNode::MethodDeclNode(TypeTypeNode *type, const string& name, vector<Fo
 }
 
 void MethodDeclNode::Visit() {
+    // Semantic Check
+    symTable.PushScope();
+    /* -------------- */
+
+
     this->typeInfo->Visit();
     this->nodeName->Visit();
     for (auto node : *this->params)
         node->Visit();
+    /* ================= */
+    symTable.CurrentScope--;
+    /* ================= */
     this->methodBody->Visit();
 }
 
@@ -356,6 +368,14 @@ FormalParamNode::FormalParamNode(TypeTypeNode *type, VariableDeclaratorIdNode *n
 }
 
 void FormalParamNode::Visit() {
+    // Semantic Check
+    if (symTable.SearchVar(this->declNode->variableName->name)->scopeLv == symTable.CurrentScope) {
+        string errorStr = "Erro r :Duplicate local var decl - " + this->declNode->variableName->name;
+        cout << errorStr << endl;
+        exit(1);
+    }
+    symTable.AddVarNode(new vector<ModifierType>, this->declNode->variableName->name, paramType);
+    /* -------------- */
     this->paramType->Visit();
     this->declNode->Visit();
 }
@@ -395,9 +415,11 @@ BlockNode::BlockNode(vector<BlockStatementNode*> *stats) {
 }
 
 void BlockNode::Visit() {
+    symTable.PushScope();
     for (auto node : *this->stats) {
         node->Visit();
     }
+    symTable.PopScope();
 }
 
 void BlockNode::codeGen(JContext* context){
@@ -644,7 +666,6 @@ void ExprNode::Visit() {
     if (this->primary != NULL) this->primary->Visit();
     if (this->ids != NULL) {
         for (auto node : *this->ids)
-
             node->Visit();
     }
     if (this->methodCallParams != NULL)
@@ -656,6 +677,64 @@ void ExprNode::Visit() {
     if (this->ArrayIndexQueryList != NULL) {
         for (auto node : *this->ArrayIndexQueryList) {
             node->Visit();
+        }
+    }
+
+    if (this->type == IDEN_METHOD || this->type == IDEN_DOT_METHOD) {
+        string methodName = (*this->ids)[0]->name;
+        for (int i = 1; i < this->ids->size(); i++) {
+            methodName += "." + (*this->ids)[0]->name;
+        }
+        ReturnMethodNode *rtn = symTable.SearchMethod( methodName, this->methodCallParams->exprs);
+        if (rtn == NULL) {
+            string errorStr = "Error : Unrecognized method call - " + methodName;
+            cout << errorStr << endl;
+            exit(1);
+        }
+        this->valType = rtn->returnType;
+        this->val = new ExprValInfo(0);
+        this->assignable = 0;
+    } else if (this->type == IDEN_DOT || this->type == IDEN_ARRAY || this->type == IDEN_DOT_ARRAY) {
+        string varName = (*this->ids)[0]->name;
+        for (int i = 1; i < this->ids->size(); i++) {
+            vafName += "." + (*this->ids)[0]->name;
+        }
+        VarNode *rtn = symTable.SearchVar(varName);
+        if (rtn == NULL) {
+            string errorStr = "Error : Unrecognized identifier - " + varName;
+            cout << errorStr << endl;
+            exit(1);
+        }
+        this->valType = rtn->varType;
+        this->val = new ExprValInfo(0);
+        this->assignable = 1;
+    } else if (this->type == PRIMARY_TYPE) {
+        PrimaryNode *pmnode = this->primary;
+        if (pmnode->type == PRIMARY_EXPR) {
+            this->valType = pmnode->expr->valType;
+            this->val = pmnode->expr->val;
+            this->assignable = pmnode->expr->assignable;
+        } else if (pmnode->type == PRIMARY_THIS || pmnode->type == PRIMARY_SUPER) {
+            // TODO
+            this->valType = NULL;
+            this->val = new ExprValInfo(0);
+            this->assignable = 0;
+        } else if (pmnode->type == PRIMARY_LITERAL) {
+            this->valType = new TypeTypeNode(LtoP_map.at(pmnode->literal->type));
+            if (pmnode->literal->type == STRING_LIT) {
+                this->valType->typeInfo = new vector<IdentifierNode*>;
+                this->valType->typeInfo->push_back(new IdentifierNode("String"));
+            } // NO RULE FOR NULL LITERAL - NONPR_TYPE and typeInfo == NULL
+            if (this->valType->type == LONG_PTYPE || this->valType->type == BOOLEAN_PTYPE) {
+                this->val = new ExprValInfo(this->pmnode->literal->intVal);
+            } else if (this->valType->type == DOUBLE_PTYPE) {
+                this->val = new ExprValInfo(this->pmnode->literal->floatVal);
+            } else if (pmnode->literal->type == STRING_LIT) {
+                this->val = new ExprValInfo(this->pmnode->literal->strVal);
+            }
+            this->assignable = 0;
+        } else if (pmnode->type == PRIMARY_IDEN) {
+            VarNode *rtn = symTable.SearchVar(pmnode->id->name);
         }
     }
 }
@@ -926,6 +1005,19 @@ LocalVariableDeclNode::LocalVariableDeclNode(int isFinal, TypeTypeNode *type, ve
 }
 
 void LocalVariableDeclNode::Visit() {
+    // Semantic Check
+    vector<ModifierType*> *tmp = new vector<ModifierType*>;
+    if (this->isFinal) tmp->push_back(FINAL_TYPE);
+    for (auto node : *this->decls) {
+        if (symTable.SearchVar(node->idNode->variableName->name) == symTable.CurrentScope) {
+            string errorStr = "Error : Duplicate local var decl - " + node->idNode->variableName->name;
+            cout << errorStr << endl;
+            exit(1);
+        }
+        symTable.AddVarNode(tmp, node->idNode->variableName->name, this->type);
+    }
+    /* -------------- */
+
     if (this->isFinal) cout << "final variable" << endl;
     this->type->Visit();
     for (auto node : *this->decls) {

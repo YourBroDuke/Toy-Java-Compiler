@@ -8,6 +8,7 @@
 #include "SymbolTable/SymbolTable.h"
 extern int yylex();
 extern char *yytext;
+extern int yylineno
 void yyerror(const char *s) {
 	printf("Error: %s\n", s);
 	printf("Error text: %s\n", yytext);
@@ -805,9 +806,23 @@ Statement:
 MemberDecl:
 	MemberModifierListOptional MethodDecl {
 		$$ = new MemberDeclNode(METHOD_DECL_TYPE, $1, $2);
+		MethodDeclNode *tmp = dynamic_cast<MethodDeclNode*>($2);
+		if (symTable.SearchMethod(tmp->nodeName->name, tmp->params)) {
+			string errorStr = "Error : Duplicate method decl - " + tmp->nodeName->name + "at line ";
+			errorStr += yylineno;
+			yyerror(errorStr.c_str());
+		}
+		symTable.AddMethodNode($1, tmp->nodeName->name, tmp->params, tmp->typeInfo);
 	}
 	| MemberModifierListOptional FieldDecl {
 		$$ = new MemberDeclNode(FIELD_DECL_TYPE, $1, $2);
+		FieldDeclNode *tmp = dynamic_cast<FieldDeclNode*>($2);
+		if (symTable.SearchVar(tmp->id->name)) {
+			string errorStr = "Error : Duplicate Field Decl - " + tmp->id->name + "at line ";
+			errorStr += yylineno;
+			yyerror(errorStr.c_str());
+		}
+		symTable.AddVarNode($1, tmp->id->name, tmp->type);
 	}
 	| MemberModifierListOptional ConstructorDecl {
 		$$ = new MemberDeclNode(CONSTRUCTOR_DECL_TYPE, $1, $2);
@@ -900,7 +915,7 @@ Literal:
 		$$ = new LiteralNode(BOOL_LIT, "false");
 	}
 	| NULL_LITERAL {
-		$$ = new LiteralNode(NULL_LIT, "NULL");
+		$$ = new LiteralNode(NULL_LIT, "null");
 	}
 	;
 

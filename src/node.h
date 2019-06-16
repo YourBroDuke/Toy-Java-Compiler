@@ -321,9 +321,31 @@ public:
     void codeGen(JContext *context);
 };
 
+/* SEMANTIC CHECK */
+class ExprValInfo {
+    ExprValType type;
+    int type; // 0-unknown at compile time, 1-int, 2-float, 3-string
+    int64_t intVal;
+    double floatVal;
+    string strVal;
+
+    ExprValInfo(int type) { this->type = type; }
+    ExprValInfo(int64_t intVal) { this->type = 1; this->intVal = intVal; }
+    ExprValInfo(double floatVal) { this->type = 2; this->floatVal = floatVal; }
+    ExprValInfo(const string& strVal) {this->type = 3; this->strVal = strVal; }
+
+};
+
 class ExprNode : public Statement
 {
 public:
+    // For semantic check | optimization | code generation
+    // No need to traverse & Can access info in it directly
+    TypeTypeNode *valType;
+    int assignable;
+    ExprValInfo *val;
+    /*------------------------ */
+
     ExprStatType type;
     PrimaryNode *primary;
     vector<IdentifierNode*> *ids;

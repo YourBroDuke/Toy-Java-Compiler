@@ -51,6 +51,24 @@ enum PrimitiveTypeOrNot {
     NONPR_TYPE
 };
 
+enum LiteralType {
+    INTEGER_LIT,
+    FLOAT_LIT,
+    CHAR_LIT,
+    STRING_LIT,
+    BOOL_LIT,
+    NULL_LIT
+};
+
+const map<LiteralType, PrimitiveTypeOrNot> LtoP_map = {
+    {INTEGER_LIT, LONG_PTYPE},
+    {FLOAT_LIT, DOUBLE_PTYPE},
+    {CHAR_LIT, LONG_PTYPE},
+    {STRING_LIT, NONPR_TYPE},
+    {BOOL_LIT, BOOLEAN_PTYPE},
+    {NULL_LIT, NONPR_TYPE}
+}
+
 const map<PrimitiveTypeOrNot, string> PrimitiveTypeOrNotMap = {
     {BOOLEAN_PTYPE, "Z"},
     {CHAR_PTYPE, "C"},
@@ -143,15 +161,6 @@ enum PrimaryNodeType {
     PRIMARY_SUPER,
     PRIMARY_LITERAL,
     PRIMARY_IDEN
-};
-
-enum LiteralType {
-    INTEGER_LIT,
-    FLOAT_LIT,
-    CHAR_LIT,
-    STRING_LIT,
-    BOOL_LIT,
-    NULL_LIT
 };
 
 enum LocalVarType {
