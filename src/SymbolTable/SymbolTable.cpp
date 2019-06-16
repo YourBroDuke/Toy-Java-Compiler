@@ -18,13 +18,13 @@ SymbolTable::SymbolTable() {
     TypeTypeNode *testTTN = new TypeTypeNode(INT_PTYPE);
     FormalParamNode *fpn = new FormalParamNode(new TypeTypeNode(NONPR_TYPE, "String"), new VariableDeclaratorIdNode(0, "s"));
     FormalParamNode *fpn1 = new FormalParamNode(new TypeTypeNode(INT_PTYPE), new VariableDeclaratorIdNode(0, "s"));
-    vector<FormalParamNode*> *can = new vector<FormalParamNode*>;
-    can->push_back(fpn);
+    vector<FormalParamNode*> *can1 = new vector<FormalParamNode*>;
+    vector<FormalParamNode*> *can2 = new vector<FormalParamNode*>;
+    can1->push_back(fpn);
     // AddVarNode(testModi, "i", testTTN);
-    AddMethodNode(testModi, "System.out.println", can, testTTN);
-    can->pop_back();
-    can->push_back(fpn1);
-    AddMethodNode(testModi, "System.out.println", can, testTTN);
+    AddMethodNode(testModi, "System.out.println", can1, testTTN);
+    can2->push_back(fpn1);
+    AddMethodNode(testModi, "System.out.println", can2, testTTN);
     // cout << SearchMethod("j", new vector<TypeTypeNode*>)->methodName << endl;
 }
 
