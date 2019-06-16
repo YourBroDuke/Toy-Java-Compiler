@@ -130,12 +130,12 @@ enum ExprStatType {
     OP_LSHIFT,
     OP_RSHIFT,
     OP_URSHIFT,
-    OP_LT,
-    OP_GT,
-    OP_LTOE,
-    OP_GTOE,
-    OP_EQ,
-    OP_NEQ,
+    OP_LT,//
+    OP_GT,//
+    OP_LTOE,//
+    OP_GTOE,//
+    OP_EQ,//
+    OP_NEQ,//
     OP_BAND,
     OP_CARET,
     OP_BOR,
