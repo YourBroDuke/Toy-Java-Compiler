@@ -136,7 +136,7 @@ JLabel::JLabel(string name){
 }
 
 string JLabel::toString(){
-    return *this->labelName + ":";
+    return *this->labelName + ":" + "\n";
 }
 
 string JField::toString(){

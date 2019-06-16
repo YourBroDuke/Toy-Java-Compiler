@@ -652,6 +652,11 @@ void StatementNode::codeGen(JContext *context){
         this->stmt->push_back(NewSimpleBinInstruction("goto", L2));
         this->stmt->push_back(new JLabel(L1));
         this->stat3->codeGen(context);
+        this->stmt->insert(
+            this->stmt->end(),
+            this->stat3->stmt->begin(),
+            this->stat3->stmt->end()
+        );
         this->stmt->push_back(new JLabel(L2));
     } else if (this->type == WHILE_STAT_TYPE){
         // L1:
@@ -1035,25 +1040,25 @@ void ExprNode::codeGen(JContext *context){
                 this->subExpr2->stmt->end()
             );
             this->exprType = this->subExpr1->exprType;
-            switch (this->subExpr1->exprType)
+            switch (this->subExpr1->valType->type)
             {
-            case INT_TYPE:
+            case INT_PTYPE:
                 this->ExprTypeStr = "I";
                 this->stmt->push_back(NewSimpleNoParamsInstruction("iadd"));
                 break;
-            case FLOAT_TYPE:
+            case FLOAT_PTYPE:
                 this->ExprTypeStr = "F";
                 this->stmt->push_back(NewSimpleNoParamsInstruction("fadd"));
                 break;
-            case DOUBLE_TYPE:
+            case DOUBLE_PTYPE:
                 this->ExprTypeStr = "D";
                 this->stmt->push_back(NewSimpleNoParamsInstruction("dadd"));
                 break;
-            case LONG_TYPE:
+            case LONG_PTYPE:
                 this->ExprTypeStr = "J";
                 this->stmt->push_back(NewSimpleNoParamsInstruction("ladd"));
                 break;
-            case STRING_TYPE:
+            case NONPR_TYPE:
                 // TODO:
                 break;
             default:
@@ -1160,8 +1165,11 @@ void ExprNode::codeGen(JContext *context){
             subExpr2->stmt->begin(),
             subExpr2->stmt->end()
         );
-        auto index = context->currentFrame.top()->varIndex[subExpr1->primary->id->name].index;
-        this->stmt->push_back(NewSimpleBinInstruction("istore", to_string(index)));
+        auto index = context->currentFrame.top()->varIndex[subExpr1->primary->id->name];
+        if (index.typeName == "F")
+            this->stmt->push_back(NewSimpleBinInstruction("fstore", to_string(index.index)));
+        else 
+            this->stmt->push_back(NewSimpleBinInstruction("istore", to_string(index.index)));
     }
     debugInfo("codeGen exit ExprNode");
 }
@@ -1318,8 +1326,13 @@ void LiteralNode::codeGen(JContext *context){
         JInstructionStmt *s = new JInstructionStmt;
         s->opcode = new string("ldc");
         s->args = new vector<string>;
-        if (this->type == FLOAT_LIT)
-            s->args->push_back(to_string(this->floatVal));
+        if (this->type == FLOAT_LIT){
+            string str = to_string(this->floatVal);
+            
+            if (str.find(".") == string::npos)
+                str += ".00";
+            s->args->push_back(str);
+        }
         else
             s->args->push_back(to_string(this->intVal));
         this->stmt->push_back(s);
@@ -1438,7 +1451,10 @@ void VariableDeclaratorNode::codeGen(JContext *context) {
         if (this->initializer == nullptr){
             JInstructionStmt *s = new JInstructionStmt;
             s->opcode = new string("ldc");
-            s->args->push_back("0");
+            if (parNode->type->type == FLOAT_PTYPE)
+                s->args->push_back("0.0");
+            else
+                s->args->push_back("0");
             this->stmt->push_back(s);
         }
         int index = frame->varIndex[this->idNode->variableName->name].index;

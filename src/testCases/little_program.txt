@@ -1,22 +1,21 @@
 package org.gilmour.test;
 
 public class Test {
-    private int testNum;
     
-    public static int main(String[] args) {
-        int i;
-        double j = 3;
-        i = j + 1;
+    public static void main(String[] args) {
+        float testNum;
+        int i = 1;
+        float j = 3.0;
         i++;
-	    for (int _i = 0; _i < j; i++) {
+	    for (int _i = 0; _i < i; _i=_i+1) {
             System.out.println("Hello World!");
         }
 
-        if (_i == 0) {
-            testNum = i;
+        if (i == 0) {
+            testNum = j+testNum;
         } else {
             testNum = j;
         }
-        return 0;
+        return ;
     }
 }

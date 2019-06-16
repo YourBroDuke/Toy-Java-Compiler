@@ -392,7 +392,7 @@ Expression:
 	| Expression OR Expression {
 		$$ = new ExprNode(OP_OR, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
 	}
-	| Expression ASSIGN Expression {
+	| Expression ASSIGN Expression %prec ASSIGNS {
 		$$ = new ExprNode(OP_ASN, dynamic_cast<ExprNode*>($1), dynamic_cast<ExprNode*>($3));
 	}
 	| Expression ADD_ASSIGN Expression {
