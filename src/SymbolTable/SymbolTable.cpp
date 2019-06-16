@@ -117,7 +117,7 @@ ReturnMethodNode *SymbolTable::SearchMethod(const string& MethodName, vector<Typ
                 }
             }
         }
-        if (match == 1) return new ReturnMethodNode(MethodName, paramTypes, tmpPtr->returnTypeList[i], tmpPtr->methodModifierTypesList[i]);
+        if (match == 1) return new ReturnMethodNode(MethodName, tmpPtr->ParamsList[i], tmpPtr->returnTypeList[i], tmpPtr->methodModifierTypesList[i]);
     }
 
     return NULL;

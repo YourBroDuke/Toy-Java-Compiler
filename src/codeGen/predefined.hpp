@@ -13,7 +13,7 @@ const map<string, vector<string>> predefSymbolTable = {
     {"java/io/PrintStream/println", {
             // TODO: add more types
             "(Ljava/lang/String;)V",
-            "(I;)V"
+            "(I)V"
         }
     }
 };

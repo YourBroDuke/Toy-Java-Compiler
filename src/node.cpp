@@ -118,6 +118,7 @@ void TypeDeclNode::codeGen(JContext* context){
     }
     this->classSpec->className = this->classDecl->className->name;
     // TODO: pointer copy
+    context->className = this->classDecl->className->name;
     context->classFile->jasminHeader->classSpec = this->classSpec;
     context->nodeStack.pop();
 
@@ -265,7 +266,8 @@ void MethodDeclNode::codeGen(JContext *context){
     context->currentFrame.pop();
     delete top;
 
-    context->classFile->JMethods = new vector<JMethod*>;
+    if (context->classFile->JMethods == nullptr)
+        context->classFile->JMethods = new vector<JMethod*>;
     context->classFile->JMethods->push_back(this->method);
     debugInfo("codeGen exit MethodDeclNode");
 }
@@ -976,25 +978,34 @@ void ExprNode::codeGen(JContext *context){
         string fullDotId = IDVecToStringDot(this->ids);
         string desc = "(";
         for (auto s : *this->methodCallParams->exprs){
-            desc += s->ExprTypeStr + ';';
+            s->valType->codeGen(context);
+            desc += s->valType->typeStr;
         }
-        desc = desc.substr(0, desc.size() - 1);
         string descriptor;
         auto it = predefSymbolTable.find(fullId);
+        JInstructionStmt *s;
         if (it != predefSymbolTable.end()){
             for (auto s: it->second){
-                if (s.rfind(desc, 0) == 0){
+                if (s.substr(0, desc.size()) == desc){;
+                    debugInfo(desc);
                     descriptor = s;
                     break;
                 }
             }
+            s = NewSimpleBinInstruction("invokevirtual", fullId + descriptor);
         }else {
+            string className = context->className;
             auto res = symTable.SearchMethod(fullDotId, this->methodCallParams->exprs);
             descriptor = MakeDescriptor(res->ParamsList, res->returnType);
+            for (auto mt:*res->methodModifierTypesList){
+                if (mt == STATIC_TYPE){
+                    s = NewSimpleBinInstruction("invokestatic", className + "/" + fullId + descriptor);
+                }else{
+                    s = NewSimpleBinInstruction("invokevirtual", className + "/" + fullId + descriptor);
+                }
+            }
         }
-        // TODO: invokestatic invokespecial
-        JInstructionStmt *s = NewSimpleBinInstruction("invokevirtual", fullId + descriptor);
-
+        debugInfo("adding stmts");
         this->stmt->push_back(s);
         auto pos = descriptor.find(")");
         this->ExprTypeStr = descriptor.substr(pos, descriptor.size() - pos);
@@ -1008,6 +1019,18 @@ void ExprNode::codeGen(JContext *context){
         this->ExprTypeStr = this->primary->ExprTypeStr;
     } else if (this->type == OP_ADD){
         if (this->subExpr1->exprType == this->subExpr2->exprType){
+            this->subExpr1->codeGen(context);
+            this->subExpr2->codeGen(context);
+            this->stmt->insert(
+                this->stmt->end(),
+                this->subExpr1->stmt->begin(),
+                this->subExpr1->stmt->end()
+            );
+            this->stmt->insert(
+                this->stmt->end(),
+                this->subExpr2->stmt->begin(),
+                this->subExpr2->stmt->end()
+            );
             this->exprType = this->subExpr1->exprType;
             switch (this->subExpr1->exprType)
             {
@@ -1037,6 +1060,18 @@ void ExprNode::codeGen(JContext *context){
             // TODO:error handling
         }
     } else if (this->type == OP_EQ || this->type == OP_LT || this->type == OP_GT || this->type == OP_LTOE || this->type == OP_GTOE){
+        this->subExpr1->codeGen(context);
+            this->subExpr2->codeGen(context);
+            this->stmt->insert(
+                this->stmt->end(),
+                this->subExpr1->stmt->begin(),
+                this->subExpr1->stmt->end()
+            );
+            this->stmt->insert(
+                this->stmt->end(),
+                this->subExpr2->stmt->begin(),
+                this->subExpr2->stmt->end()
+            );
         switch (this->subExpr1->exprType)
         {
         case INT_TYPE:{
@@ -1064,7 +1099,20 @@ void ExprNode::codeGen(JContext *context){
         default:
             break;
         }
+        this->ExprTypeStr = "I";
     } else if (this->type == OP_AND){
+        this->subExpr1->codeGen(context);
+            this->subExpr2->codeGen(context);
+            this->stmt->insert(
+                this->stmt->end(),
+                this->subExpr1->stmt->begin(),
+                this->subExpr1->stmt->end()
+            );
+            this->stmt->insert(
+                this->stmt->end(),
+                this->subExpr2->stmt->begin(),
+                this->subExpr2->stmt->end()
+            );
         switch (this->subExpr1->exprType)
         {
         case INT_TYPE:
@@ -1075,7 +1123,20 @@ void ExprNode::codeGen(JContext *context){
         default:
             break;
         }
+        this->ExprTypeStr = "I";
     }else if (this->type == OP_OR){
+        this->subExpr1->codeGen(context);
+            this->subExpr2->codeGen(context);
+            this->stmt->insert(
+                this->stmt->end(),
+                this->subExpr1->stmt->begin(),
+                this->subExpr1->stmt->end()
+            );
+            this->stmt->insert(
+                this->stmt->end(),
+                this->subExpr2->stmt->begin(),
+                this->subExpr2->stmt->end()
+            );
         switch (this->subExpr1->exprType)
         {
         case INT_TYPE:
@@ -1087,6 +1148,17 @@ void ExprNode::codeGen(JContext *context){
         default:
             break;
         }
+        this->ExprTypeStr = "I";
+    } else if (this->type == OP_ASN){
+        this->subExpr2->codeGen(context);
+        this->subExpr1->codeGen(context);
+        this->stmt->insert(
+            this->stmt->end(),
+            subExpr2->stmt->begin(),
+            subExpr2->stmt->end()
+        );
+        auto index = context->currentFrame.top()->varIndex[subExpr1->primary->id->name].index;
+        this->stmt->push_back(NewSimpleBinInstruction("istore", to_string(index)));
     }
     debugInfo("codeGen exit ExprNode");
 }
@@ -1170,6 +1242,7 @@ void PrimaryNode::codeGen(JContext* context){
         }else{
             this->stmt->push_back(NewSimpleBinInstruction("aload", to_string(indexInfo.index)));
         }
+        IncrStack(context);
     }
     debugInfo("codeGen exit PrimaryNode");
 }

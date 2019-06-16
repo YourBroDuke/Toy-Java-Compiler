@@ -14,7 +14,7 @@ class JContext{
         JasminFile *classFile;
         stack<Node*> nodeStack;
         stack<Frame*> currentFrame;
-
+        string className;
     public:
         JContext(Node* node);
         ~JContext();
